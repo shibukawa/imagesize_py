@@ -24,9 +24,11 @@ Benchmark
 
 It just parses only header, ignores pixel data. So it is much faster than Pillow.
 
-.. list-table
+.. list-table::
    :header-rows: 1
 
+   - * module
+     * result
    - * imagesize(pure python) 
      * 1.077 seconds per 100000 times
    - * Pillow
