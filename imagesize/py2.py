@@ -1,21 +1,8 @@
 import struct
 
-try:
-    from PIL import Image
-except ImportError:
-    try:
-        import Image
-    except ImportError:
-        Image = None
-
-def get_by_pil(filepath):
-    img = Image.open(filepath)
-    (width, height) = img.size
-    return width, height
-
-def get_by_purepython(filepath):
+def get(filepath):
     """
-    Return (content_type, width, height) for a given img file content
+    Return (width, height) for a given img file content
     no requirements
     """
     height = -1
@@ -53,5 +40,9 @@ def get_by_purepython(filepath):
                 height, width = struct.unpack('>HH', fhandle.read(4))
             except Exception: #IGNORE:W0703
                 return
+        # handle JPEG2000s
+        elif size >= 12 and head.startswith('\x00\x00\x00\x0cjP  \r\n\x87\n'):
+            fhandle.seek(48)
+            height, width = struct.unpack('>LL', fhandle.read(8))
     return width, height
 

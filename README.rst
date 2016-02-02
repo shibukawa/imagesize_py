@@ -1,7 +1,7 @@
 imagesize
 =============
 
-This module analyzes jpeg/png/gif image header and return image size.
+This module analyzes jpeg/jpeg2000/png/gif image header and return image size.
 
 .. code:: python
 
@@ -10,7 +10,7 @@ This module analyzes jpeg/png/gif image header and return image size.
    width, height = imagesize.get("test.png")
    print(width, height)
 
-This module is pure python module (and it use PIL/Pillow for fallback). 
+This module is pure python module.
 
 API
 -----

@@ -4,13 +4,14 @@ from setuptools import setup
 #from distutils.core import setup
 
 setup(name='imagesize',
-      version='0.5.0',
-      description='Getting image size from png/jpeg/gif file',
+      version='0.6.0',
+      description='Getting image size from png/jpeg/jpeg2000/gif file',
       long_description='''
 It parses image files' header and return image size.
 
 * PNG
 * JPEG
+* JPEG2000
 * GIF
 
 This is a pure Python library.

@@ -5,11 +5,24 @@ import imagesize
 
 imagepath = os.path.join(os.path.dirname(__file__), "test", "images", "test.png")
 
+try:
+    from PIL import Image
+except ImportError:
+    try:
+        import Image
+    except ImportError:
+        Image = None
+
+def get_by_pil(filepath):
+    img = Image.open(filepath)
+    (width, height) = img.size
+    return width, height
+
 def bench_purepython():
-    imagesize.get_by_purepython(imagepath)
+    imagesize.get(imagepath)
 
 def bench_pil():
-    imagesize.get_by_pil(imagepath)
+    get_by_pil(imagepath)
 
 def bench():
     print("pure python png")
