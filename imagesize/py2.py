@@ -14,14 +14,23 @@ def get(filepath):
         # handle GIFs
         if size >= 10 and head[:6] in ('GIF87a', 'GIF89a'):
             # Check to see if content_type is correct
-            width, height = struct.unpack("<hh", head[6:10])
+            try:
+                width, height = struct.unpack("<hh", head[6:10])
+            except struct.error:
+                raise ValueError("Invalid GIF file")
         # see png edition spec bytes are below chunk length then and finally the
         elif size >= 24 and head.startswith('\211PNG\r\n\032\n') and head[12:16] == 'IHDR':
-            width, height = struct.unpack(">LL", head[16:24])
+            try:
+                width, height = struct.unpack(">LL", head[16:24])
+            except struct.error:
+                raise ValueError("Invalid PNG file")
         # Maybe this is for an older PNG version.
         elif size >= 16 and head.startswith('\211PNG\r\n\032\n'):
             # Check to see if we have the right content type
-            width, height = struct.unpack(">LL", head[8:16])
+            try:
+                width, height = struct.unpack(">LL", head[8:16])
+            except struct.error:
+                raise ValueError("Invalid PNG file")
         # handle JPEGs
         elif size >= 2 and head.startswith('\377\330'):
             try:
@@ -38,11 +47,14 @@ def get(filepath):
                 # We are at a SOFn block
                 fhandle.seek(1, 1)  # Skip `precision' byte.
                 height, width = struct.unpack('>HH', fhandle.read(4))
-            except Exception: #IGNORE:W0703
-                return
+            except struct.error:
+                raise ValueError("Invalid JPEG file")
         # handle JPEG2000s
         elif size >= 12 and head.startswith('\x00\x00\x00\x0cjP  \r\n\x87\n'):
             fhandle.seek(48)
-            height, width = struct.unpack('>LL', fhandle.read(8))
+            try:
+                height, width = struct.unpack('>LL', fhandle.read(8))
+            except struct.error:
+                raise ValueError("Invalid JPEG2000 file")
     return width, height
 
