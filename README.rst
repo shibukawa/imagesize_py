@@ -1,6 +1,9 @@
 imagesize
 =============
 
+.. image:: https://travis-ci.org/shibukawa/imagesize_py.svg?branch=master
+    :target: https://travis-ci.org/shibukawa/imagesize_py
+
 This module analyzes jpeg/jpeg2000/png/gif image header and return image size.
 
 .. code:: python
