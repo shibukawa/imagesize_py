@@ -48,3 +48,11 @@ I refers the following codes:
 
 * http://markasread.net/post/17551554979/get-image-size-info-using-pure-python-code
 * http://stackoverflow.com/questions/8032642/how-to-obtain-image-size-using-standard-python-class-without-using-external-lib
+
+Thank you for feedbacks:
+
+* tk0miya (https://github.com/tk0miya)
+* shimizukawa (https://github.com/shimizukawa)
+* xantares (https://github.com/xantares)
+* Ivan Zakharyaschev (https://github.com/imz)
+
