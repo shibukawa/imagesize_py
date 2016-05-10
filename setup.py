@@ -20,8 +20,7 @@ This is a pure Python library.
       author_email='yoshiki at shibu.jp',
       url='https://github.com/shibukawa/imagesize_py',
       license="MIT",
-      packages=['imagesize'],
-      package_dir={"imagesize": "imagesize"},
+      py_modules=['imagesize'],
       classifiers = [
           'Development Status :: 4 - Beta',
           'Intended Audience :: Developers',
