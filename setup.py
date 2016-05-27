@@ -21,6 +21,7 @@ This is a pure Python library.
       url='https://github.com/shibukawa/imagesize_py',
       license="MIT",
       py_modules=['imagesize'],
+      test_suite='test',
       classifiers = [
           'Development Status :: 4 - Beta',
           'Intended Audience :: Developers',
