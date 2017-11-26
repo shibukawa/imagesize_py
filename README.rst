@@ -32,7 +32,7 @@ It just parses only header, ignores pixel data. So it is much faster than Pillow
 
    - * module
      * result
-   - * imagesize(pure python) 
+   - * imagesize(pure python)
      * 1.077 seconds per 100000 times
    - * Pillow
      * 10.569 seconds per 100000 times
@@ -58,4 +58,3 @@ Thank you for feedbacks:
 * shimizukawa (https://github.com/shimizukawa)
 * xantares (https://github.com/xantares)
 * Ivan Zakharyaschev (https://github.com/imz)
-
