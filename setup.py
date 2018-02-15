@@ -17,7 +17,7 @@ It parses image files' header and return image size.
 This is a pure Python library.
 ''',
       author='Yoshiki Shibukawa',
-      author_email='yoshiki at shibu.jp',
+      author_email='yoshiki@shibu.jp',
       url='https://github.com/shibukawa/imagesize_py',
       license="MIT",
       py_modules=['imagesize'],
