@@ -72,7 +72,7 @@ def get(filepath):
                 fhandle.seek(0) # Read 0xff next
                 size = 2
                 ftype = 0
-                while not 0xc0 <= ftype <= 0xcf:
+                while not 0xc0 <= ftype <= 0xcf or ftype in [0xc4, 0xc8, 0xcc]:
                     fhandle.seek(size, 1)
                     byte = fhandle.read(1)
                     while ord(byte) == 0xff:
