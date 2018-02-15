@@ -42,7 +42,7 @@ def get(filepath):
     """
     height = -1
     width = -1
-    
+
     with open(filepath, 'rb') as fhandle:
         head = fhandle.read(24)
         size = len(head)
@@ -202,4 +202,3 @@ def getDPI(filepath):
                 print(e)
                 raise ValueError("Invalid JPEG2000 file")
     return xDPI, yDPI
-
