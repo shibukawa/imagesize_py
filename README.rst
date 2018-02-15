@@ -13,7 +13,7 @@ This module analyzes jpeg/jpeg2000/png/gif image header and return image size.
    width, height = imagesize.get("test.png")
    print(width, height)
 
-This module is pure python module.
+This module is a pure python module.
 
 API
 -----
@@ -58,3 +58,5 @@ Thank you for feedbacks:
 * shimizukawa (https://github.com/shimizukawa)
 * xantares (https://github.com/xantares)
 * Ivan Zakharyaschev (https://github.com/imz)
+* Jon Dufresne (https://github.com/jdufresne)
+* Geoff Lankow (https://github.com/darktrojan)

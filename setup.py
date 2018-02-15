@@ -4,7 +4,7 @@ from setuptools import setup
 #from distutils.core import setup
 
 setup(name='imagesize',
-      version='0.7.1',
+      version='1.0.0',
       description='Getting image size from png/jpeg/jpeg2000/gif file',
       long_description='''
 It parses image files' header and return image size.
