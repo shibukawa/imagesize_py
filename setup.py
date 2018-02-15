@@ -23,7 +23,7 @@ This is a pure Python library.
       py_modules=['imagesize'],
       test_suite='test',
       classifiers = [
-          'Development Status :: 4 - Beta',
+          'Development Status :: 5 - Production/Stable',
           'Intended Audience :: Developers',
           'License :: OSI Approved :: MIT License',
           'Programming Language :: Python',
