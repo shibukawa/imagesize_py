@@ -1,9 +1,11 @@
 import unittest
-import os, sys
+import os
+import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 import imagesize
 
 imagedir = os.path.join(os.path.dirname(__file__), "images")
+
 
 class GetTest(unittest.TestCase):
     def test_load_png(self):

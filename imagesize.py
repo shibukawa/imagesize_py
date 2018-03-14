@@ -12,6 +12,7 @@ _UNIT_0_01MM = 5
 _UNIT_UM = 6
 _UNIT_INCH = 6
 
+
 def _convertToDPI(density, unit):
     if unit == _UNIT_KM:
         return int(density * 0.0000254 + 0.5)
@@ -34,6 +35,7 @@ def _convertToDPI(density, unit):
     elif unit == _UNIT_UM:
         return density * 25400
     return density
+
 
 def get(filepath):
     """
@@ -69,7 +71,7 @@ def get(filepath):
         # handle JPEGs
         elif size >= 2 and head.startswith(b'\377\330'):
             try:
-                fhandle.seek(0) # Read 0xff next
+                fhandle.seek(0)  # Read 0xff next
                 size = 2
                 ftype = 0
                 while not 0xc0 <= ftype <= 0xcf or ftype in [0xc4, 0xc8, 0xcc]:
@@ -92,6 +94,7 @@ def get(filepath):
             except struct.error:
                 raise ValueError("Invalid JPEG2000 file")
     return width, height
+
 
 def getDPI(filepath):
     """
@@ -121,7 +124,7 @@ def getDPI(filepath):
                     if unit:
                         xDPI = _convertToDPI(xDensity, _UNIT_1M)
                         yDPI = _convertToDPI(yDensity, _UNIT_1M)
-                    else: # no unit
+                    else:  # no unit
                         xDPI = xDensity
                         yDPI = yDensity
                     break
@@ -138,11 +141,11 @@ def getDPI(filepath):
         # handle JPEGs
         elif size >= 2 and head.startswith(b'\377\330'):
             try:
-                fhandle.seek(0) # Read 0xff next
+                fhandle.seek(0)  # Read 0xff next
                 size = 2
                 ftype = 0
                 while not 0xc0 <= ftype <= 0xcf:
-                    if ftype == 0xe0: # APP0 marker
+                    if ftype == 0xe0:  # APP0 marker
                         fhandle.seek(7, 1)
                         unit, xDensity, yDensity = struct.unpack(">BHH", fhandle.read(5))
                         if unit == 1 or unit == 0:
@@ -173,7 +176,7 @@ def getDPI(filepath):
                     boxHeader = fhandle.read(8)
                     boxType = boxHeader[4:]
                     print(boxType)
-                    if boxType == 'res ': # find resolution super box
+                    if boxType == 'res ':  # find resolution super box
                         foundResBox = True
                         headerSize -= 8
                         print("found res super box")
@@ -188,7 +191,7 @@ def getDPI(filepath):
                         boxHeader = fhandle.read(8)
                         boxType = boxHeader[4:]
                         print(boxType)
-                        if boxType == 'resd': # Display resolution box
+                        if boxType == 'resd':  # Display resolution box
                             print("@2")
                             yDensity, xDensity, yUnit, xUnit = struct.unpack(">HHBB", fhandle.read(10))
                             xDPI = _convertToDPI(xDensity, xUnit)

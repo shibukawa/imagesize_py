@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 from setuptools import setup
-#from distutils.core import setup
 
 setup(name='imagesize',
       version='1.0.0',
@@ -22,7 +21,7 @@ This is a pure Python library.
       license="MIT",
       py_modules=['imagesize'],
       test_suite='test',
-      classifiers = [
+      classifiers=[
           'Development Status :: 5 - Production/Stable',
           'Intended Audience :: Developers',
           'License :: OSI Approved :: MIT License',
