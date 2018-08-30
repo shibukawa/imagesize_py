@@ -3,7 +3,7 @@
 from setuptools import setup
 
 setup(name='imagesize',
-      version='1.0.0',
+      version='1.1.0',
       description='Getting image size from png/jpeg/jpeg2000/gif file',
       long_description='''
 It parses image files' header and return image size.
@@ -12,6 +12,7 @@ It parses image files' header and return image size.
 * JPEG
 * JPEG2000
 * GIF
+* TIFF (experimental)
 
 This is a pure Python library.
 ''',
@@ -34,6 +35,7 @@ This is a pure Python library.
           'Programming Language :: Python :: 3.4',
           'Programming Language :: Python :: 3.5',
           'Programming Language :: Python :: 3.6',
+          'Programming Language :: Python :: 3.7',
           'Programming Language :: Python :: Implementation :: CPython',
           'Programming Language :: Python :: Implementation :: PyPy',
           'Topic :: Multimedia :: Graphics'

@@ -27,3 +27,13 @@ class GetTest(unittest.TestCase):
         width, height = imagesize.get(os.path.join(imagedir, "test.gif"))
         self.assertEqual(width, 802)
         self.assertEqual(height, 670)
+
+    def test_bigendien_tiff(self):
+        width, height = imagesize.get(os.path.join(imagedir, "test.tiff"))
+        self.assertEqual(width, 802)
+        self.assertEqual(height, 670)
+
+    def test_littleendien_tiff(self):
+        width, height = imagesize.get(os.path.join(imagedir, "multipage_tiff_example.tif"))
+        self.assertEqual(width, 800)
+        self.assertEqual(height, 600)
