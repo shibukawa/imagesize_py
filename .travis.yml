@@ -9,6 +9,4 @@ python:
   - "3.7"
   - "pypy2.7-6.0"
   - "pypy3.5-6.0"
-install:
-  - pip install nose
-script: nosetests
+script: python setup.py test
