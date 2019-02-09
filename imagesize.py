@@ -108,7 +108,7 @@ def get(filepath):
                 height, width = struct.unpack('>LL', fhandle.read(8))
             except struct.error:
                 raise ValueError("Invalid JPEG2000 file")
-        # handle big endien TIFF
+        # handle big endian TIFF
         elif size >= 8 and head.startswith(b"\x4d\x4d\x00\x2a"):
             offset = struct.unpack('>L', head[4:8])[0]
             fhandle.seek(offset)
