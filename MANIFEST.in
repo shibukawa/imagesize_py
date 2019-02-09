@@ -1,2 +1,3 @@
 include LICENSE.rst
-graft test
+include test/*.py
+include test/images/*
