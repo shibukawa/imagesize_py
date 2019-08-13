@@ -1,3 +1,4 @@
+import io
 import struct
 
 _UNIT_KM = -3
@@ -60,7 +61,12 @@ def get(filepath):
     height = -1
     width = -1
 
-    with open(filepath, 'rb') as fhandle:
+    with (
+        # for bytes or bytearray input
+        ((isinstance(filepath, bytes) or isinstance(filepath, bytearray)) and io.BytesIO(filepath))
+        # for file path string input
+        or open(filepath, "rb")
+    ) as fhandle:
         head = fhandle.read(24)
         size = len(head)
         # handle GIFs
@@ -158,7 +164,12 @@ def getDPI(filepath):
     """
     xDPI = -1
     yDPI = -1
-    with open(filepath, 'rb') as fhandle:
+    with (
+        # for bytes or bytearray input
+        ((isinstance(filepath, bytes) or isinstance(filepath, bytearray)) and io.BytesIO(filepath))
+        # for file path string input
+        or open(filepath, "rb")
+    ) as fhandle:
         head = fhandle.read(24)
         size = len(head)
         # handle GIFs
