@@ -1,4 +1,6 @@
+import re
 import struct
+from xml.etree import ElementTree
 
 _UNIT_KM = -3
 _UNIT_100M = -2
@@ -50,6 +52,30 @@ def _convertToDPI(density, unit):
     elif unit == _UNIT_UM:
         return density * 25400
     return density
+
+
+def _convertToPx(value):
+    matched = re.match(r"(\d+)(?:\.\d)?([a-z]*)$", value)
+    if not matched:
+        raise ValueError("unknown length value: %s" % value)
+    else:
+        length, unit = matched.groups()
+        if unit == "":
+            return int(length)
+        elif unit == "cm":
+            return int(length) * 96 / 2.54
+        elif unit == "mm":
+            return int(length) * 96 / 2.54 / 10
+        elif unit == "in":
+            return int(length) * 96
+        elif unit == "pc":
+            return int(length) * 96 / 6
+        elif unit == "pt":
+            return int(length) * 96 / 6
+        elif unit == "px":
+            return int(length)
+        else:
+            raise ValueError("unknown unit type: %s" % unit)
 
 
 def get(filepath):
@@ -147,6 +173,15 @@ def get(filepath):
                     break
             if width == -1 or height == -1:
                 raise ValueError("Invalid TIFF file: width and/or height IDS entries are missing.")
+        # handle SVGs
+        elif size >= 5 and head.startswith(b'<?xml'):
+            try:
+                fhandle.seek(0)
+                root = ElementTree.parse(fhandle).getroot()
+                width = _convertToPx(root.attrib["width"])
+                height = _convertToPx(root.attrib["height"])
+            except Exception:
+                raise ValueError("Invalid SVG file")
 
     return width, height
 
