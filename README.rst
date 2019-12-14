@@ -55,7 +55,7 @@ Run test with the following command:
 
 .. code:: bash
 
-   python -m unittestt
+   python -m unittest
 
 License
 -----------
