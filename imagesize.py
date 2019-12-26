@@ -82,11 +82,13 @@ def get(filepath):
     """
     Return (width, height) for a given img file content
     no requirements
+    :type filepath: Union[str, pathlib.Path]
+    :rtype Tuple[int, int]
     """
     height = -1
     width = -1
 
-    with open(filepath, 'rb') as fhandle:
+    with open(str(filepath), 'rb') as fhandle:
         head = fhandle.read(24)
         size = len(head)
         # handle GIFs
@@ -188,12 +190,14 @@ def get(filepath):
 
 def getDPI(filepath):
     """
-    Return (width, height) for a given img file content
+    Return (x DPI, y DPI) for a given img file content
     no requirements
+    :type filepath: Union[str, pathlib.Path]
+    :rtype Tuple[int, int]
     """
     xDPI = -1
     yDPI = -1
-    with open(filepath, 'rb') as fhandle:
+    with open(str(filepath), 'rb') as fhandle:
         head = fhandle.read(24)
         size = len(head)
         # handle GIFs
