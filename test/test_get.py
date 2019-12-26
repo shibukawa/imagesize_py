@@ -33,6 +33,11 @@ class GetTest(unittest.TestCase):
         self.assertEqual(width, 802)
         self.assertEqual(height, 670)
 
+    def test_load_svg(self):
+        width, height = imagesize.get(os.path.join(imagedir, "test.svg"))
+        self.assertEqual(width, 90)
+        self.assertEqual(height, 60)
+
     def test_littleendian_tiff(self):
         width, height = imagesize.get(os.path.join(imagedir, "multipage_tiff_example.tif"))
         self.assertEqual(width, 800)

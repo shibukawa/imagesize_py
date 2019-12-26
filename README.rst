@@ -4,7 +4,7 @@ imagesize
 .. image:: https://travis-ci.org/shibukawa/imagesize_py.svg?branch=master
     :target: https://travis-ci.org/shibukawa/imagesize_py
 
-This module analyzes JPEG/JPEG 2000/PNG/GIF/TIFF image headers and returns image size.
+This module analyzes JPEG/JPEG 2000/PNG/GIF/TIFF/SVG image headers and returns image size.
 
 .. code:: python
 
@@ -55,7 +55,7 @@ Run test with the following command:
 
 .. code:: bash
 
-   python -m unittestt
+   python -m unittest
 
 License
 -----------
