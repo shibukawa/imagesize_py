@@ -182,6 +182,24 @@ def get(filepath):
                     break
             if width == -1 or height == -1:
                 raise ValueError("Invalid TIFF file: width and/or height IDS entries are missing.")
+        # handle little endian BigTiff
+        elif size >= 8 and head.startswith(b"\x49\x49\x2b\x00"):
+            bytesize_offset = struct.unpack('<L', head[4:8])[0]
+            if bytesize_offset != 8:
+                raise ValueError('Invalid BigTIFF file: Expected offset to be 8, found {} instead.'.format(offset))
+            offset = struct.unpack('<Q', head[8:16])[0]
+            fhandle.seek(offset)
+            ifdsize = struct.unpack("<Q", fhandle.read(8))[0]
+            for i in range(ifdsize):
+                tag, datatype, count, data = struct.unpack("<HHQQ", fhandle.read(20))
+                if tag == 256:
+                    width = data
+                elif tag == 257:
+                    height = data
+                if width != -1 and height != -1:
+                    break
+            if width == -1 or height == -1:
+                raise ValueError("Invalid BigTIFF file: width and/or height IDS entries are missing.")
         # handle SVGs
         elif size >= 5 and head.startswith(b'<?xml'):
             try:
