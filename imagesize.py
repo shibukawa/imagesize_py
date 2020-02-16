@@ -336,7 +336,7 @@ def getDPI(filepath):
                 while headerSize > 0:
                     boxHeader = fhandle.read(8)
                     boxType = boxHeader[4:]
-                    if boxType == 'res ':  # find resolution super box
+                    if boxType == b'res ':  # find resolution super box
                         foundResBox = True
                         headerSize -= 8
                         break
@@ -347,7 +347,7 @@ def getDPI(filepath):
                     while headerSize > 0:
                         boxHeader = fhandle.read(8)
                         boxType = boxHeader[4:]
-                        if boxType == 'resd':  # Display resolution box
+                        if boxType == b'resd':  # Display resolution box
                             yDensity, xDensity, yUnit, xUnit = struct.unpack(">HHBB", fhandle.read(10))
                             xDPI = _convertToDPI(xDensity, xUnit)
                             yDPI = _convertToDPI(yDensity, yUnit)
