@@ -1,3 +1,4 @@
+from __future__ import print_function
 import re
 import struct
 from xml.etree import ElementTree
@@ -269,13 +270,13 @@ def getDPI(filepath):
                     print("headerSize", headerSize)
                     boxHeader = fhandle.read(8)
                     boxType = boxHeader[4:]
-                    print(boxType)
-                    if boxType == 'res ':  # find resolution super box
+                    print(boxType.decode('ascii'))
+                    if boxType == b'res ':  # find resolution super box
                         foundResBox = True
                         headerSize -= 8
                         print("found res super box")
                         break
-                    print("@1", boxHeader)
+                    print("@1", repr(boxHeader))
                     boxSize, = struct.unpack('>L', boxHeader[:4])
                     print("boxSize", boxSize)
                     fhandle.seek(boxSize - 8, 1)
@@ -285,7 +286,7 @@ def getDPI(filepath):
                         boxHeader = fhandle.read(8)
                         boxType = boxHeader[4:]
                         print(boxType)
-                        if boxType == 'resd':  # Display resolution box
+                        if boxType == b'resd':  # Display resolution box
                             print("@2")
                             yDensity, xDensity, yUnit, xUnit = struct.unpack(">HHBB", fhandle.read(10))
                             xDPI = _convertToDPI(xDensity, xUnit)
