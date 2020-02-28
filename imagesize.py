@@ -201,15 +201,17 @@ def get(filepath):
             if width == -1 or height == -1:
                 raise ValueError("Invalid BigTIFF file: width and/or height IDS entries are missing.")
         # handle SVGs
-        elif size >= 5 and head.startswith(b'<?xml'):
+        elif size >= 5 and (head.startswith(b'<?xml') or head.startswith(b'<svg')):
             try:
                 data = fhandle.read(1024)
-                width = re.search(rb'[^-]width="(.*?)"', data).group(1).decode('utf-8')
-                height = re.search(rb'[^-]height="(.*?)"', data).group(1).decode('utf-8')
-                width = _convertToPx(width)
-                height = _convertToPx(height)
+                data = data.decode('utf-8')
+                width = re.search(r'[^-]width="(.*?)"', data).group(1)
+                height = re.search(r'[^-]height="(.*?)"', data).group(1)
             except Exception:
                 raise ValueError("Invalid SVG file")
+            width = _convertToPx(width)
+            height = _convertToPx(height)
+
         # handle Netpbm
         elif head[:1] == b"P" and head[1:2] in b"123456":
             fhandle.seek(2)
