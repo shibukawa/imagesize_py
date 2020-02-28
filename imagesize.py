@@ -178,8 +178,9 @@ def get(filepath):
         elif size >= 5 and head.startswith(b'<?xml'):
             try:
                 data = fhandle.read(1024)
-                width = re.search(rb'[^-]width="(.*?)"', data).group(1).decode('utf-8')
-                height = re.search(rb'[^-]height="(.*?)"', data).group(1).decode('utf-8')
+                data = data.decode('utf-8')
+                width = re.search(r'[^-]width="(.*?)"', data).group(1)
+                height = re.search(r'[^-]height="(.*?)"', data).group(1)
             except Exception:
                 raise ValueError("Invalid SVG file")
 
