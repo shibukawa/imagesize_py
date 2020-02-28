@@ -1,8 +1,8 @@
+import io
 import os
 import re
 import struct
 from xml.etree import ElementTree
-import io
 
 _UNIT_KM = -3
 _UNIT_100M = -2
@@ -203,10 +203,11 @@ def get(filepath):
         # handle SVGs
         elif size >= 5 and head.startswith(b'<?xml'):
             try:
-                fhandle.seek(0)
-                root = ElementTree.parse(fhandle).getroot()
-                width = _convertToPx(root.attrib["width"])
-                height = _convertToPx(root.attrib["height"])
+                data = fhandle.read(1024)
+                width = re.search(rb'[^-]width="(.*?)"', data).group(1).decode('utf-8')
+                height = re.search(rb'[^-]height="(.*?)"', data).group(1).decode('utf-8')
+                width = _convertToPx(width)
+                height = _convertToPx(height)
             except Exception:
                 raise ValueError("Invalid SVG file")
         # handle Netpbm
@@ -243,8 +244,8 @@ def get(filepath):
                     break
 
                 fhandle.seek(-1, os.SEEK_CUR)
-
             width, height = sizes
+
     finally:
         fhandle.close()
 
@@ -329,36 +330,27 @@ def getDPI(filepath):
             foundResBox = False
             try:
                 while headerSize > 0:
-                    print("headerSize", headerSize)
                     boxHeader = fhandle.read(8)
                     boxType = boxHeader[4:]
-                    print(boxType)
                     if boxType == 'res ':  # find resolution super box
                         foundResBox = True
                         headerSize -= 8
-                        print("found res super box")
                         break
-                    print("@1", boxHeader)
                     boxSize, = struct.unpack('>L', boxHeader[:4])
-                    print("boxSize", boxSize)
                     fhandle.seek(boxSize - 8, 1)
                     headerSize -= boxSize
                 if foundResBox:
                     while headerSize > 0:
                         boxHeader = fhandle.read(8)
                         boxType = boxHeader[4:]
-                        print(boxType)
                         if boxType == 'resd':  # Display resolution box
-                            print("@2")
                             yDensity, xDensity, yUnit, xUnit = struct.unpack(">HHBB", fhandle.read(10))
                             xDPI = _convertToDPI(xDensity, xUnit)
                             yDPI = _convertToDPI(yDensity, yUnit)
                             break
                         boxSize, = struct.unpack('>L', boxHeader[:4])
-                        print("boxSize", boxSize)
                         fhandle.seek(boxSize - 8, 1)
                         headerSize -= boxSize
             except struct.error as e:
-                print(e)
                 raise ValueError("Invalid JPEG2000 file")
     return xDPI, yDPI
