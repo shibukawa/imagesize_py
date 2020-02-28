@@ -200,10 +200,12 @@ def get(filepath):
                     break
             if width == -1 or height == -1:
                 raise ValueError("Invalid BigTIFF file: width and/or height IDS entries are missing.")
+
         # handle SVGs
         elif size >= 5 and (head.startswith(b'<?xml') or head.startswith(b'<svg')):
+            fhandle.seek(0)
+            data = fhandle.read(1024)
             try:
-                data = fhandle.read(1024)
                 data = data.decode('utf-8')
                 width = re.search(r'[^-]width="(.*?)"', data).group(1)
                 height = re.search(r'[^-]height="(.*?)"', data).group(1)
