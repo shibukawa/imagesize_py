@@ -1,6 +1,5 @@
 import re
 import struct
-from xml.etree import ElementTree
 
 _UNIT_KM = -3
 _UNIT_100M = -2
@@ -178,12 +177,14 @@ def get(filepath):
         # handle SVGs
         elif size >= 5 and head.startswith(b'<?xml'):
             try:
-                fhandle.seek(0)
-                root = ElementTree.parse(fhandle).getroot()
-                width = _convertToPx(root.attrib["width"])
-                height = _convertToPx(root.attrib["height"])
+                data = fhandle.read(1024)
+                width = re.search(rb'[^-]width="(.*?)"', data).group(1).decode('utf-8')
+                height = re.search(rb'[^-]height="(.*?)"', data).group(1).decode('utf-8')
             except Exception:
                 raise ValueError("Invalid SVG file")
+
+            width = _convertToPx(width)
+            height = _convertToPx(height)
 
     return width, height
 
