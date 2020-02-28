@@ -176,8 +176,9 @@ def get(filepath):
                 raise ValueError("Invalid TIFF file: width and/or height IDS entries are missing.")
         # handle SVGs
         elif size >= 5 and head.startswith(b'<?xml'):
+            fhandle.seek(0)
+            data = fhandle.read(1024)
             try:
-                data = fhandle.read(1024)
                 data = data.decode('utf-8')
                 width = re.search(r'[^-]width="(.*?)"', data).group(1)
                 height = re.search(r'[^-]height="(.*?)"', data).group(1)
