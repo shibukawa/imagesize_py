@@ -40,8 +40,8 @@ class GetTest(unittest.TestCase):
 
     def test_load_float_svg(self):
         width, height = imagesize.get(os.path.join(imagedir, "test_float.svg"))
-        self.assertEqual(width, 102)
-        self.assertEqual(height, 80)
+        self.assertEqual(width, 351.496062992126)
+        self.assertEqual(height, 181.41732283464566)
 
     def test_littleendian_tiff(self):
         width, height = imagesize.get(os.path.join(imagedir, "multipage_tiff_example.tif"))
