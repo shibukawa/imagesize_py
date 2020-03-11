@@ -55,7 +55,7 @@ def _convertToDPI(density, unit):
 
 
 def _convertToPx(value):
-    matched = re.match(r"(\d+)(?:\.\d)?([a-z]*)$", value)
+    matched = re.match(r"(\d+)(?:\.\d+)?([a-z]*)$", value)
     if not matched:
         raise ValueError("unknown length value: %s" % value)
     else:
