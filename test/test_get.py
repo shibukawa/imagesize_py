@@ -42,3 +42,16 @@ class GetTest(unittest.TestCase):
         width, height = imagesize.get(os.path.join(imagedir, "multipage_tiff_example.tif"))
         self.assertEqual(width, 800)
         self.assertEqual(height, 600)
+
+    def test_load_png_filelike(self):
+        """ pytest -k test_load_png_filelike
+        """
+        from io import BytesIO
+
+        _ = os.path.join(imagedir, "test.png")
+        with open(_, "rb") as fhandle:
+            filelike = BytesIO(fhandle.read())
+
+        width, height = imagesize.get(filelike)
+        self.assertEqual(width, 802)
+        self.assertEqual(height, 670)
