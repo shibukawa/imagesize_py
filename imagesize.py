@@ -88,7 +88,12 @@ def get(filepath):
     height = -1
     width = -1
 
-    with open(str(filepath), 'rb') as fhandle:
+    if hasattr(filepath, "read"):  # file-like object
+        fhandle = filepath
+    else:
+        fhandle = open(str(filepath), 'rb')
+
+    try:
         head = fhandle.read(24)
         size = len(head)
         # handle GIFs
@@ -184,6 +189,8 @@ def get(filepath):
                 height = _convertToPx(root.attrib["height"])
             except Exception:
                 raise ValueError("Invalid SVG file")
+    finally:
+        fhandle.close()
 
     return width, height
 
