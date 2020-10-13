@@ -1,6 +1,7 @@
 import re
 import struct
 from xml.etree import ElementTree
+import io
 
 _UNIT_KM = -3
 _UNIT_100M = -2
@@ -88,7 +89,7 @@ def get(filepath):
     height = -1
     width = -1
 
-    if hasattr(filepath, "read"):  # file-like object
+    if isinstance(filepath, io.BytesIO):  # file-like object
         fhandle = filepath
     else:
         fhandle = open(str(filepath), 'rb')
