@@ -44,7 +44,7 @@ class GetTest(unittest.TestCase):
         self.assertEqual(height, 600)
 
     def test_load_png_filelike(self):
-        """ pytest -k test_load_png_filelike
+        """ test_load_png_filelike
         """
         from io import BytesIO
 
