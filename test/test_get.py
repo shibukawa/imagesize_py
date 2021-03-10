@@ -42,3 +42,11 @@ class GetTest(unittest.TestCase):
         width, height = imagesize.get(os.path.join(imagedir, "multipage_tiff_example.tif"))
         self.assertEqual(width, 800)
         self.assertEqual(height, 600)
+
+    def test_netpbm(self):
+        for test_type in ["test", "test-ascii"]:
+            for test_ext in ["pbm", "pgm", "ppm"]:
+                test_file = os.path.join(imagedir, "{}.{}".format(test_type, test_ext))
+                width, height = imagesize.get(test_file)
+                self.assertEqual(width, 65)
+                self.assertEqual(height, 20)
