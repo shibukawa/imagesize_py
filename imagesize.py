@@ -79,44 +79,6 @@ def _convertToPx(value):
             raise ValueError("unknown unit type: %s" % unit)
 
 
-def _getNetpbm(fhandle, is_binary):
-    fhandle.seek(2)
-    sizes = []
-    ftype = "Netpbm binary" if is_binary else "Netpbm ASCII"
-
-    while True:
-        next_chr = fhandle.read(1)
-
-        if next_chr.isspace():
-            continue
-
-        if not is_binary and next_chr == b"#":
-            fhandle.readline()
-            continue
-
-        if next_chr == b"":
-            raise ValueError("Invalid {} file.".format(ftype))
-
-        if not next_chr.isdigit():
-            raise ValueError("Invalid character found on {} file.".format(ftype))
-
-        size = next_chr
-        next_chr = fhandle.read(1)
-
-        while next_chr.isdigit():
-            size += next_chr
-            next_chr = fhandle.read(1)
-
-        sizes.append(int(size))
-
-        if len(sizes) == 2:
-            break
-
-        fhandle.seek(-1, os.SEEK_CUR)
-
-    return sizes
-
-
 def get(filepath):
     """
     Return (width, height) for a given img file content
@@ -224,25 +186,41 @@ def get(filepath):
             except Exception:
                 raise ValueError("Invalid SVG file")
 
-        elif head[:2] in (b"P1", b"P2", b"P3"):
-            try:
-                width, height = _getNetpbm(fhandle, False)
+        elif head[:1] == b"P" and head[1:2] in b"123456":
+            fhandle.seek(2)
+            sizes = []
 
-            except ValueError:
-                raise
+            while True:
+                next_chr = fhandle.read(1)
 
-            except Exception:
-                raise ValueError("Invalid ASCII Netpbm file")
+                if next_chr.isspace():
+                    continue
 
-        elif head[:2] in (b"P4", b"P5", b"P6"):
-            try:
-                width, height = _getNetpbm(fhandle, True)
+                if next_chr == b"":
+                    raise ValueError("Invalid Netpbm file")
 
-            except ValueError:
-                raise
+                if next_chr == b"#":
+                    fhandle.readline()
+                    continue
 
-            except Exception:
-                raise ValueError("Invalid binary Netpbm file")
+                if not next_chr.isdigit():
+                    raise ValueError("Invalid character found on Netpbm file")
+
+                size = next_chr
+                next_chr = fhandle.read(1)
+
+                while next_chr.isdigit():
+                    size += next_chr
+                    next_chr = fhandle.read(1)
+
+                sizes.append(int(size))
+
+                if len(sizes) == 2:
+                    break
+
+                fhandle.seek(-1, os.SEEK_CUR)
+
+            width, height = sizes
 
     return width, height
 
