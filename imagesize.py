@@ -191,9 +191,6 @@ def get(filepath):
                 height = _convertToPx(root.attrib["height"])
             except Exception:
                 raise ValueError("Invalid SVG file")
-    finally:
-        fhandle.close()
-
         elif head[:1] == b"P" and head[1:2] in b"123456":
             fhandle.seek(2)
             sizes = []
@@ -229,6 +226,8 @@ def get(filepath):
                 fhandle.seek(-1, os.SEEK_CUR)
 
             width, height = sizes
+    finally:
+        fhandle.close()
 
     return width, height
 
