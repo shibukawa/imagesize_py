@@ -78,6 +78,38 @@ def _convertToPx(value):
             raise ValueError("unknown unit type: %s" % unit)
 
 
+def _getNetpbm(fhandle, is_binary):
+    fhandle.seek(2)
+    sizes = []
+
+    while True:
+        next_chr = fhandle.read(1)
+
+        if next_chr.isspace():
+            continue
+
+        if not is_binary and next_chr == b"#":
+            fhandle.readline()
+            continue
+
+        if not next_chr.isdigit():
+            return None
+
+        size = b""
+
+        while next_chr.isdigit():
+            size += next_chr
+            next_chr = fhandle.read(1)
+
+        if size != "":
+            sizes.append(int(size))
+
+            if len(sizes) == 2:
+                break
+
+    return sizes
+
+
 def get(filepath):
     """
     Return (width, height) for a given img file content
@@ -184,6 +216,20 @@ def get(filepath):
                 height = _convertToPx(root.attrib["height"])
             except Exception:
                 raise ValueError("Invalid SVG file")
+
+        elif head[:2] in (b"P1", b"P2", b"P3"):
+            try:
+                width, height = _getNetpbm(fhandle, False)
+
+            except Exception:
+                raise ValueError("Invalid ASCII Netpbm file")
+
+        elif head[:2] in (b"P4", b"P5", b"P6"):
+            try:
+                width, height = _getNetpbm(fhandle, True)
+
+            except Exception:
+                raise ValueError("Invalid binary Netpbm file")
 
     return width, height
 
