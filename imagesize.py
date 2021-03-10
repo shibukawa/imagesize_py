@@ -1,3 +1,4 @@
+import os
 import re
 import struct
 from xml.etree import ElementTree
@@ -99,17 +100,19 @@ def _getNetpbm(fhandle, is_binary):
         if not next_chr.isdigit():
             raise ValueError("Invalid character found on {} file.".format(ftype))
 
-        size = b""
+        size = next_chr
+        next_chr = fhandle.read(1)
 
         while next_chr.isdigit():
             size += next_chr
             next_chr = fhandle.read(1)
 
-        if size != "":
-            sizes.append(int(size))
+        sizes.append(int(size))
 
-            if len(sizes) == 2:
-                break
+        if len(sizes) == 2:
+            break
+
+        fhandle.seek(-1, os.SEEK_CUR)
 
     return sizes
 
