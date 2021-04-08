@@ -185,7 +185,7 @@ def get(filepath):
                 height = _convertToPx(root.attrib["height"])
             except Exception:
                 raise ValueError("Invalid SVG file")
-
+        # handle Netpbm
         elif head[:1] == b"P" and head[1:2] in b"123456":
             fhandle.seek(2)
             sizes = []
