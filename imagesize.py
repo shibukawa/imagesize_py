@@ -134,7 +134,7 @@ def get(filepath):
                 # We are at a SOFn block
                 fhandle.seek(1, 1)  # Skip `precision' byte.
                 height, width = struct.unpack('>HH', fhandle.read(4))
-            except struct.error:
+            except (struct.error, TypeError):
                 raise ValueError("Invalid JPEG file")
         # handle JPEG2000s
         elif size >= 12 and head.startswith(b'\x00\x00\x00\x0cjP  \r\n\x87\n'):
