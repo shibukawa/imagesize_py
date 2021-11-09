@@ -48,6 +48,14 @@ class GetTest(unittest.TestCase):
         self.assertEqual(width, 800)
         self.assertEqual(height, 600)
 
+    def test_netpbm(self):
+        for test_type in ["test", "test-ascii"]:
+            for test_ext in ["pbm", "pgm", "ppm"]:
+                test_file = os.path.join(imagedir, "{}.{}".format(test_type, test_ext))
+                width, height = imagesize.get(test_file)
+                self.assertEqual(width, 65)
+                self.assertEqual(height, 20)
+
     def test_load_png_bytes(self):
         width, height = imagesize.get(os.path.join(imagedir_bytes, b"test.png"))
         self.assertEqual(width, 802)

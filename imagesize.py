@@ -1,4 +1,4 @@
-from __future__ import print_function
+import os
 import re
 import struct
 
@@ -206,6 +206,42 @@ def get(filepath):
                 height = re.search(r'[^-]height="(.*?)"', data).group(1)
             except Exception:
                 raise ValueError("Invalid SVG file")
+        # handle Netpbm
+        elif head[:1] == b"P" and head[1:2] in b"123456":
+            fhandle.seek(2)
+            sizes = []
+
+            while True:
+                next_chr = fhandle.read(1)
+
+                if next_chr.isspace():
+                    continue
+
+                if next_chr == b"":
+                    raise ValueError("Invalid Netpbm file")
+
+                if next_chr == b"#":
+                    fhandle.readline()
+                    continue
+
+                if not next_chr.isdigit():
+                    raise ValueError("Invalid character found on Netpbm file")
+
+                size = next_chr
+                next_chr = fhandle.read(1)
+
+                while next_chr.isdigit():
+                    size += next_chr
+                    next_chr = fhandle.read(1)
+
+                sizes.append(int(size))
+
+                if len(sizes) == 2:
+                    break
+
+                fhandle.seek(-1, os.SEEK_CUR)
+
+            width, height = sizes
 
             width = _convertToPx(width)
             height = _convertToPx(height)
@@ -295,36 +331,27 @@ def getDPI(filepath):
             foundResBox = False
             try:
                 while headerSize > 0:
-                    print("headerSize", headerSize)
                     boxHeader = fhandle.read(8)
                     boxType = boxHeader[4:]
-                    print(boxType.decode('ascii'))
                     if boxType == b'res ':  # find resolution super box
                         foundResBox = True
                         headerSize -= 8
-                        print("found res super box")
                         break
-                    print("@1", repr(boxHeader))
                     boxSize, = struct.unpack('>L', boxHeader[:4])
-                    print("boxSize", boxSize)
                     fhandle.seek(boxSize - 8, 1)
                     headerSize -= boxSize
                 if foundResBox:
                     while headerSize > 0:
                         boxHeader = fhandle.read(8)
                         boxType = boxHeader[4:]
-                        print(boxType)
                         if boxType == b'resd':  # Display resolution box
-                            print("@2")
                             yDensity, xDensity, yUnit, xUnit = struct.unpack(">HHBB", fhandle.read(10))
                             xDPI = _convertToDPI(xDensity, xUnit)
                             yDPI = _convertToDPI(yDensity, yUnit)
                             break
                         boxSize, = struct.unpack('>L', boxHeader[:4])
-                        print("boxSize", boxSize)
                         fhandle.seek(boxSize - 8, 1)
                         headerSize -= boxSize
             except struct.error as e:
-                print(e)
                 raise ValueError("Invalid JPEG2000 file")
     return xDPI, yDPI
