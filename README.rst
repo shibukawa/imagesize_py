@@ -83,4 +83,6 @@ Thank you for feedback:
 * Jon Dufresne (https://github.com/jdufresne)
 * Geoff Lankow (https://github.com/darktrojan)
 * Hugo (https://github.com/hugovk)
-
+* Jack Cherng (https://github.com/jfcherng)
+* Tyler A. Young (https://github.com/s3cur3)
+* Mark Browning (https://github.com/mabrowning)
