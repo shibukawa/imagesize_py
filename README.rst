@@ -4,7 +4,7 @@ imagesize
 .. image:: https://travis-ci.org/shibukawa/imagesize_py.svg?branch=master
     :target: https://travis-ci.org/shibukawa/imagesize_py
 
-This module analyzes JPEG/JPEG 2000/PNG/GIF/TIFF/SVG image headers and returns image size.
+This module analyzes JPEG/JPEG 2000/PNG/GIF/TIFF/SVG/Netpbm image headers and returns image size or DIP.
 
 .. code:: python
 
@@ -13,7 +13,10 @@ This module analyzes JPEG/JPEG 2000/PNG/GIF/TIFF/SVG image headers and returns i
    width, height = imagesize.get("test.png")
    print(width, height)
 
-This module is a pure Python module.
+   width, height = imagesize.getDPI("test.png")
+   print(width, height)
+
+This module is a pure Python module. You can use file like object like file or something like ``io.BytesIO``.
 
 API
 -----
@@ -21,6 +24,10 @@ API
 * ``imagesize.get(filepath)``
 
   Returns image size (width, height).
+
+* ``imagesize.getDPI(filepath)``
+
+  Returns image DPI (width, height).
 
 Benchmark
 ------------
@@ -38,15 +45,6 @@ It only parses headers, and ignores pixel data. So it is much faster than Pillow
      * 10.569 seconds per 100 000 times
 
 I tested on MacBookPro (2014/Core i7) with 125kB PNG files.
-
-Restriction
----------------
-
-* TIFF
-
-  It can returns only first picture's size because of restriction of API design.
-
-  It supports only small TIFF file. BigTIFF support is not implemented.
 
 Development
 ---------------
@@ -86,3 +84,9 @@ Thank you for feedback:
 * Jack Cherng (https://github.com/jfcherng)
 * Tyler A. Young (https://github.com/s3cur3)
 * Mark Browning (https://github.com/mabrowning)
+* ossdev07 (https://github.com/ossdev07)
+* Nicholas-Schaub (https://github.com/Nicholas-Schaub)
+* Nuffknacker (https://github.com/Nuffknacker) 
+* Hannes Römer (https://github.com/hroemer)
+* mikey (https://github.com/ffreemt)
+* Marco (https://github.com/marcoffee)
