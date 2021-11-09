@@ -35,4 +35,4 @@ matrix:
       python: "pypy2.7-6.0"
     - arch: amd64
       python: "pypy3.5-6.0"
-script: python setup.py test
+script: python -m unittest discover
