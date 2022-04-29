@@ -249,6 +249,11 @@ def get(filepath):
 
                 fhandle.seek(-1, os.SEEK_CUR)
             width, height = sizes
+        elif head.startswith(b"RIFF") and head[8:12] == b"WEBP":
+            # enter VP8 chunk
+            fhandle.seek(26)
+            width = struct.unpack("<H", fhandle.read(2))[0]
+            height = struct.unpack("<H", fhandle.read(2))[0]
 
     finally:
         fhandle.close()
