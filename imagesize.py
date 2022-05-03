@@ -96,7 +96,7 @@ def get(filepath):
         fhandle = open(filepath, 'rb')
 
     try:
-        head = fhandle.read(24)
+        head = fhandle.read(31)
         size = len(head)
         # handle GIFs
         if size >= 10 and head[:6] in (b'GIF87a', b'GIF89a'):
@@ -250,10 +250,15 @@ def get(filepath):
                 fhandle.seek(-1, os.SEEK_CUR)
             width, height = sizes
         elif head.startswith(b"RIFF") and head[8:12] == b"WEBP":
-            # enter VP8 chunk
-            fhandle.seek(26)
-            width = struct.unpack("<H", fhandle.read(2))[0]
-            height = struct.unpack("<H", fhandle.read(2))[0]
+            if head[12:16] == b"VP8L":
+                raise ValueError("Invalid WEBP file: Not a WebP file.")
+            elif head[12:16] == b"VP8 ":
+                width, height = struct.unpack("<HH", head[26:30])
+            elif head[12:16] == b"VP8X":
+                width = struct.unpack("<I", head[24:27] + b"\0")[0]
+                height = struct.unpack("<I", head[27:30] + b"\0")[0]
+            else:
+                raise ValueError("Invalid WEBP file: Not a WebP file.")
 
     finally:
         fhandle.close()
