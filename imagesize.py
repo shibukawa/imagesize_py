@@ -96,7 +96,7 @@ def get(filepath):
         fhandle = open(filepath, 'rb')
 
     try:
-        head = fhandle.read(24)
+        head = fhandle.read(31)
         size = len(head)
         # handle GIFs
         if size >= 10 and head[:6] in (b'GIF87a', b'GIF89a'):
@@ -249,6 +249,18 @@ def get(filepath):
 
                 fhandle.seek(-1, os.SEEK_CUR)
             width, height = sizes
+        elif head.startswith(b"RIFF") and head[8:12] == b"WEBP":
+            if head[12:16] == b"VP8 ":
+                width, height = struct.unpack("<HH", head[26:30])
+            elif head[12:16] == b"VP8X":
+                width = struct.unpack("<I", head[24:27] + b"\0")[0]
+                height = struct.unpack("<I", head[27:30] + b"\0")[0]
+            elif head[12:16] == b"VP8L":
+                b = head[21:25]
+                width = (((b[1] & 63) << 8) | b[0]) + 1
+                height = (((b[3] & 15) << 10) | (b[2] << 2) | ((b[1] & 192) >> 6)) + 1
+            else:
+                raise ValueError("Unsupported WebP file")
 
     finally:
         fhandle.close()
