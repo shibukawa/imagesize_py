@@ -90,3 +90,4 @@ Thank you for feedback:
 * Hannes Römer (https://github.com/hroemer)
 * mikey (https://github.com/ffreemt)
 * Marco (https://github.com/marcoffee)
+* ExtReMLapin (https://github.com/ExtReMLapin)
