@@ -261,6 +261,9 @@ def get(filepath):
                 height = (((b[3] & 15) << 10) | (b[2] << 2) | ((b[1] & 192) >> 6)) + 1
             else:
                 raise ValueError("Unsupported WebP file")
+        elif head.startswith(b'BM'):
+            width, height = struct.unpack("<LL", head[18:26])
+
 
     finally:
         fhandle.close()
