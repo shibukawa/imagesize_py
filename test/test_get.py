@@ -104,6 +104,16 @@ class GetTest(unittest.TestCase):
         self.assertEqual(width, 800)
         self.assertEqual(height, 600)
 
+    def test_load_webp_vp8x(self):
+        """Test VP8X format WebP file parsing.
+        
+        VP8X format stores dimensions as (width-1, height-1) in the header,
+        so the parser must add 1 to get the actual dimensions.
+        """
+        width, height = imagesize.get(os.path.join(imagedir, "test_vp8x.webp"))
+        self.assertEqual(width, 200)
+        self.assertEqual(height, 1)
+
     @unittest.skipIf(Path is None, "requires pathlib support")
     def test_load_png_path(self):
         width, height = imagesize.get(Path(imagedir, "test.png"))
