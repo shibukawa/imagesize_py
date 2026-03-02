@@ -4,7 +4,7 @@ imagesize
 .. image:: https://travis-ci.org/shibukawa/imagesize_py.svg?branch=master
     :target: https://travis-ci.org/shibukawa/imagesize_py
 
-This module analyzes JPEG/JPEG 2000/PNG/GIF/TIFF/SVG/Netpbm/WebP image headers and returns image size or DIP.
+This module analyzes JPEG/JPEG 2000/PNG/GIF/TIFF/SVG/Netpbm/WebP image headers and returns image size or DPI.
 
 .. code:: python
 
