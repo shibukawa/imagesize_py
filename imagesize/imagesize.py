@@ -90,7 +90,7 @@ def get(filepath):
     height = -1
     width = -1
 
-    if isinstance(filepath, io.BytesIO):  # file-like object
+    if isinstance(filepath, (io.BytesIO, io.BufferedReader)):  # file-like object
         fhandle = filepath
     else:
         fhandle = open(filepath, 'rb')
