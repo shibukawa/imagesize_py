@@ -9,6 +9,7 @@ setup(name='imagesize',
       long_description='''
 It parses image files' header and return image size.
 
+* BMP
 * PNG
 * JPEG
 * JPEG2000
