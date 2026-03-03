@@ -8,6 +8,7 @@ imagedir = os.path.join(os.path.dirname(__file__), "images")
 ROTATED_HEIC = os.path.join(imagedir, "test_rotated.heic")
 if not os.path.exists(ROTATED_HEIC):
     ROTATED_HEIC = os.path.join(imagedir, "test-rotated.heic")
+ROTATED_AVIF = os.path.join(imagedir, "test-rotated.avif")
 
 
 class GetInfoTest(unittest.TestCase):
@@ -87,3 +88,15 @@ class GetInfoTest(unittest.TestCase):
         info = imagesize.get_info(ROTATED_HEIC, dpi=False, colors=False, exif_rotation=False)
         self.assertEqual(info.width, 1440)
         self.assertEqual(info.height, 960)
+
+    def test_get_info_applies_avif_rotation_by_default(self):
+        info = imagesize.get_info(ROTATED_AVIF, dpi=False, colors=False)
+        self.assertEqual(info.width, 420)
+        self.assertEqual(info.height, 630)
+        self.assertEqual(info.rotation, 6)
+
+    def test_get_info_can_disable_avif_rotation(self):
+        info = imagesize.get_info(ROTATED_AVIF, dpi=False, colors=False, exif_rotation=False)
+        self.assertEqual(info.width, 630)
+        self.assertEqual(info.height, 420)
+        self.assertEqual(info.rotation, 6)

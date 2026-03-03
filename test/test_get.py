@@ -10,6 +10,7 @@ bmpfile = os.path.join(imagedir, "test_24.bmp")
 bmpfile_bytes = os.path.join(imagedir_bytes, b"test_24.bmp")
 ROTATED_JPEG = os.path.join(imagedir, "test-rotated.jpg")
 ROTATED_TIFF = os.path.join(imagedir, "test-rotated.tiff")
+ROTATED_AVIF = os.path.join(imagedir, "test-rotated.avif")
 ROTATED_HEIC = os.path.join(imagedir, "test_rotated.heic")
 if not os.path.exists(ROTATED_HEIC):
     ROTATED_HEIC = os.path.join(imagedir, "test-rotated.heic")
@@ -234,3 +235,13 @@ class GetTest(unittest.TestCase):
         width, height = imagesize.get(ROTATED_HEIC, exif_rotation=False)
         self.assertEqual(width, 1440)
         self.assertEqual(height, 960)
+
+    def test_load_avif_with_exif_rotation_default(self):
+        width, height = imagesize.get(ROTATED_AVIF)
+        self.assertEqual(width, 420)
+        self.assertEqual(height, 630)
+
+    def test_load_avif_with_exif_rotation_disabled(self):
+        width, height = imagesize.get(ROTATED_AVIF, exif_rotation=False)
+        self.assertEqual(width, 630)
+        self.assertEqual(height, 420)
