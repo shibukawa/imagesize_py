@@ -4,7 +4,7 @@ imagesize
 .. image:: https://github.com/shibukawa/imagesize_py/actions/workflows/ci.yml/badge.svg
     :target: https://github.com/shibukawa/imagesize_py/actions/workflows/ci.yml
 
-This module analyzes JPEG/JPEG 2000/PNG/GIF/TIFF/SVG/Netpbm/WebP image headers and returns image size, DPI, and related metadata.
+This module analyzes JPEG/JPEG 2000/PNG/GIF/TIFF/SVG/Netpbm/WebP/AVIF image headers and returns image size, DPI, and related metadata.
 
 .. code:: python
 
