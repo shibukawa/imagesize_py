@@ -49,6 +49,8 @@ _HEIF_IROT_TO_EXIF = {
     3: 8,
 }
 
+_JPEG_NO_SOF_MARKERS = {0xc4, 0xc8, 0xcc}
+
 
 @runtime_checkable
 class ReadSeekBinary(Protocol):
@@ -162,20 +164,12 @@ def _get_size(fhandle):
     # handle JPEGs
     elif size >= 2 and head.startswith(b'\377\330'):
         try:
-            fhandle.seek(0)  # Read 0xff next
-            size = 2
-            ftype = 0
-            while not 0xc0 <= ftype <= 0xcf or ftype in [0xc4, 0xc8, 0xcc]:
-                fhandle.seek(size, 1)
-                byte = fhandle.read(1)
-                while ord(byte) == 0xff:
-                    byte = fhandle.read(1)
-                ftype = ord(byte)
-                size = struct.unpack('>H', fhandle.read(2))[0] - 2
+            fhandle.seek(0)
+            _seek_to_jpeg_sof(fhandle)
             # We are at a SOFn block
             fhandle.seek(1, 1)  # Skip `precision' byte.
             height, width = struct.unpack('>HH', fhandle.read(4))
-        except (struct.error, TypeError):
+        except (struct.error, ValueError):
             raise ValueError("Invalid JPEG file")
     # handle JPEG2000s
     elif size >= 12 and head.startswith(b'\x00\x00\x00\x0cjP  \r\n\x87\n'):
@@ -354,6 +348,28 @@ def _read_jpeg_exif_rotation(fhandle):
         return _read_orientation_from_exif_payload(payload[6:])
 
     return -1
+
+
+def _read_jpeg_segment_header(fhandle):
+    marker_byte = fhandle.read(1)
+    while marker_byte == b'\xff':
+        marker_byte = fhandle.read(1)
+    if not marker_byte:
+        raise ValueError("Unexpected end of JPEG file")
+    marker = marker_byte[0]
+    segment_size = struct.unpack('>H', fhandle.read(2))[0] - 2
+    if segment_size < 0:
+        raise ValueError("Invalid JPEG segment size")
+    return marker, segment_size
+
+
+def _seek_to_jpeg_sof(fhandle):
+    block_size = 2
+    marker = 0
+    while not (0xc0 <= marker <= 0xcf and marker not in _JPEG_NO_SOF_MARKERS):
+        fhandle.seek(block_size, 1)
+        marker, block_size = _read_jpeg_segment_header(fhandle)
+    return marker, block_size
 
 
 def _read_orientation_from_exif_payload(exif_data):
@@ -754,11 +770,13 @@ def _get_dpi(fhandle):
     # handle JPEGs
     elif size >= 2 and head.startswith(b'\377\330'):
         try:
-            fhandle.seek(0)  # Read 0xff next
-            size = 2
-            ftype = 0
-            while not 0xc0 <= ftype <= 0xcf:
-                if ftype == 0xe0:  # APP0 marker
+            fhandle.seek(0)
+            block_size = 2
+            marker = 0
+            while not 0xc0 <= marker <= 0xcf:
+                fhandle.seek(block_size, 1)
+                marker, block_size = _read_jpeg_segment_header(fhandle)
+                if marker == 0xe0:  # APP0 marker
                     fhandle.seek(7, 1)
                     unit, xDensity, yDensity = struct.unpack(">BHH", fhandle.read(5))
                     if unit == 1 or unit == 0:
@@ -768,13 +786,7 @@ def _get_dpi(fhandle):
                         xDPI = _convertToDPI(xDensity, _UNIT_CM)
                         yDPI = _convertToDPI(yDensity, _UNIT_CM)
                     break
-                fhandle.seek(size, 1)
-                byte = fhandle.read(1)
-                while ord(byte) == 0xff:
-                    byte = fhandle.read(1)
-                ftype = ord(byte)
-                size = struct.unpack('>H', fhandle.read(2))[0] - 2
-        except struct.error:
+        except (struct.error, ValueError):
             raise ValueError("Invalid JPEG file")
     # handle JPEG2000s
     elif size >= 12 and head.startswith(b'\x00\x00\x00\x0cjP  \r\n\x87\n'):
@@ -854,18 +866,10 @@ def _get_channels(fhandle):
     elif size >= 2 and head.startswith(b'\377\330'):
         try:
             fhandle.seek(0)
-            block_size = 2
-            marker = 0
-            while not 0xc0 <= marker <= 0xcf or marker in [0xc4, 0xc8, 0xcc]:
-                fhandle.seek(block_size, 1)
-                byte = fhandle.read(1)
-                while ord(byte) == 0xff:
-                    byte = fhandle.read(1)
-                marker = ord(byte)
-                block_size = struct.unpack('>H', fhandle.read(2))[0] - 2
+            _seek_to_jpeg_sof(fhandle)
             fhandle.seek(5, 1)
             channels = struct.unpack('>B', fhandle.read(1))[0]
-        except (struct.error, TypeError):
+        except (struct.error, ValueError):
             raise ValueError("Invalid JPEG file")
     elif size >= 11 and head[:6] in (b'GIF87a', b'GIF89a'):
         channels = 3
