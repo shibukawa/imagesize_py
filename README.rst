@@ -4,7 +4,7 @@ imagesize
 .. image:: https://github.com/shibukawa/imagesize_py/actions/workflows/ci.yml/badge.svg
     :target: https://github.com/shibukawa/imagesize_py/actions/workflows/ci.yml
 
-This module analyzes JPEG/JPEG 2000/PNG/GIF/TIFF/SVG/Netpbm/WebP image headers and returns image size, DPI, and related metadata.
+This module analyzes JPEG/JPEG 2000/PNG/GIF/TIFF/SVG/Netpbm/WebP/AVIF image headers and returns image size, DPI, and related metadata.
 
 .. code:: python
 
@@ -17,7 +17,7 @@ This module analyzes JPEG/JPEG 2000/PNG/GIF/TIFF/SVG/Netpbm/WebP image headers a
    print(xdpi, ydpi)
 
    info = imagesize.get_info("test.png")
-   print(info.width, info.height, info.rotation, info.xdpi, info.ydpi, info.colors)
+   print(info.width, info.height, info.rotation, info.xdpi, info.ydpi, info.colors, info.channels)
 
 This module is a pure Python module. You can use file like object like file or something like ``io.BytesIO``.
 
@@ -34,9 +34,9 @@ API
 
   Returns image DPI as ``(xdpi, ydpi)``.
 
-* ``imagesize.get_info(filepath: FileInput, *, size: bool = True, dpi: bool = True, colors: bool = True, exif_rotation: bool = True) -> ImageInfo``
+* ``imagesize.get_info(filepath: FileInput, *, size: bool = True, dpi: bool = True, colors: bool = True, exif_rotation: bool = True, channels: bool = True) -> ImageInfo``
 
-  Returns an ``ImageInfo`` named tuple with ``width``, ``height``, ``rotation``, ``xdpi``, ``ydpi``, and ``colors`` fields. ``rotation`` contains orientation metadata (e.g. EXIF Orientation tag, or ``-1`` when unavailable).
+  Returns an ``ImageInfo`` named tuple with ``width``, ``height``, ``rotation``, ``xdpi``, ``ydpi``, ``colors`` and ``channels`` fields. ``rotation`` contains orientation metadata (e.g. EXIF Orientation tag, or ``-1`` when unavailable).
 
 Benchmark
 ------------

@@ -48,10 +48,26 @@ class GetTest(unittest.TestCase):
         self.assertEqual(width, 90)
         self.assertEqual(height, 60)
 
+    def test_load_svg_float_length(self):
+        from io import BytesIO
+
+        filelike = BytesIO(b'<svg width="25.4mm" height="12.7mm" xmlns="http://www.w3.org/2000/svg"></svg>')
+        width, height = imagesize.get(filelike)
+        self.assertEqual(width, 96)
+        self.assertEqual(height, 48)
+
     def test_littleendian_tiff(self):
         width, height = imagesize.get(os.path.join(imagedir, "multipage_tiff_example.tif"))
         self.assertEqual(width, 800)
         self.assertEqual(height, 600)
+
+    def test_load_svg_pt(self):
+        from io import BytesIO
+
+        svg = b'<svg xmlns="http://www.w3.org/2000/svg" width="72pt" height="36pt"></svg>'
+        width, height = imagesize.get(BytesIO(svg))
+        self.assertEqual(width, 96)
+        self.assertEqual(height, 48)
 
     def test_load_png_filelike(self):
         """ test_load_png_filelike
@@ -113,6 +129,16 @@ class GetTest(unittest.TestCase):
         width, height = imagesize.get(os.path.join(imagedir_bytes, b"multipage_tiff_example.tif"))
         self.assertEqual(width, 800)
         self.assertEqual(height, 600)
+
+    def test_load_avif(self):
+        width, height = imagesize.get(os.path.join(imagedir, "test.avif"))
+        self.assertEqual(width, 630)
+        self.assertEqual(height, 420)
+
+    def test_load_avif_bytes(self):
+        width, height = imagesize.get(os.path.join(imagedir_bytes, b"test.avif"))
+        self.assertEqual(width, 630)
+        self.assertEqual(height, 420)
 
     def test_load_webp_vp8x(self):
         """Test VP8X format WebP file parsing.
