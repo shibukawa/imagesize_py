@@ -48,27 +48,27 @@ class GetInfoTest(unittest.TestCase):
     
     def test_get_info_applies_exif_rotation_by_default(self):
         info = imagesize.get_info(os.path.join(imagedir, "test-rotated.jpg"), dpi=False, colors=False)
-        self.assertEqual(info.width, 20)
-        self.assertEqual(info.height, 40)
+        self.assertEqual(info.width, 670)
+        self.assertEqual(info.height, 802)
         self.assertEqual(info.rotation, 6)
 
 
     def test_get_info_can_disable_exif_rotation(self):
         info = imagesize.get_info(os.path.join(imagedir, "test-rotated.jpg"), dpi=False, colors=False, exif_rotation=False)
-        self.assertEqual(info.width, 40)
-        self.assertEqual(info.height, 20)
+        self.assertEqual(info.width, 802)
+        self.assertEqual(info.height, 670)
         self.assertEqual(info.rotation, 6)
 
 
     def test_get_info_applies_tiff_rotation_by_default(self):
         info = imagesize.get_info(os.path.join(imagedir, "test-rotated.tiff"), dpi=False, colors=False)
-        self.assertEqual(info.width, 20)
-        self.assertEqual(info.height, 40)
+        self.assertEqual(info.width, 670)
+        self.assertEqual(info.height, 802)
         self.assertEqual(info.rotation, 6)
 
 
     def test_get_info_can_disable_tiff_rotation(self):
         info = imagesize.get_info(os.path.join(imagedir, "test-rotated.tiff"), dpi=False, colors=False, exif_rotation=False)
-        self.assertEqual(info.width, 40)
-        self.assertEqual(info.height, 20)
+        self.assertEqual(info.width, 802)
+        self.assertEqual(info.height, 670)
         self.assertEqual(info.rotation, 6)

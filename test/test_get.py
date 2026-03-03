@@ -192,21 +192,21 @@ class GetTest(unittest.TestCase):
 
     def test_load_jpeg_with_exif_rotation_default(self):
         width, height = imagesize.get(ROTATED_JPEG)
-        self.assertEqual(width, 20)
-        self.assertEqual(height, 40)
+        self.assertEqual(width, 670)
+        self.assertEqual(height, 802)
 
     def test_load_jpeg_with_exif_rotation_disabled(self):
         width, height = imagesize.get(ROTATED_JPEG, exif_rotation=False)
-        self.assertEqual(width, 40)
-        self.assertEqual(height, 20)
+        self.assertEqual(width, 802)
+        self.assertEqual(height, 670)
 
 
     def test_load_tiff_with_exif_rotation_default(self):
         width, height = imagesize.get(ROTATED_TIFF)
-        self.assertEqual(width, 20)
-        self.assertEqual(height, 40)
+        self.assertEqual(width, 670)
+        self.assertEqual(height, 802)
 
     def test_load_tiff_with_exif_rotation_disabled(self):
         width, height = imagesize.get(ROTATED_TIFF, exif_rotation=False)
-        self.assertEqual(width, 40)
-        self.assertEqual(height, 20)
+        self.assertEqual(width, 802)
+        self.assertEqual(height, 670)
