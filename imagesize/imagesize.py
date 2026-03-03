@@ -1,8 +1,8 @@
-import io
 import os
 import re
 import struct
-from typing import BinaryIO, NamedTuple, Tuple, Union
+from decimal import Decimal
+from typing import BinaryIO, NamedTuple, Protocol, Tuple, Union, runtime_checkable
 from urllib.parse import urlparse
 from urllib.request import urlopen
 
@@ -36,8 +36,17 @@ _TIFF_TYPE_SIZES = {
 }
 
 
+@runtime_checkable
+class ReadSeekBinary(Protocol):
+    def read(self, size: int = -1) -> bytes:
+        ...
+
+    def seek(self, offset: int, whence: int = 0) -> int:
+        ...
+
+
 PathInput = Union[str, bytes, os.PathLike]
-FileInput = Union[PathInput, BinaryIO]
+FileInput = Union[PathInput, BinaryIO, ReadSeekBinary]
 
 
 class ImageInfo(NamedTuple):
@@ -48,8 +57,8 @@ class ImageInfo(NamedTuple):
     colors: int = -1
 
 
-def _open_file(filepath):
-    if isinstance(filepath, (io.BytesIO, io.BufferedReader)):
+def _open_file(filepath: FileInput):
+    if isinstance(filepath, ReadSeekBinary):
         return filepath, False
     if isinstance(filepath, str):
         parsed = urlparse(filepath)
@@ -89,18 +98,19 @@ def _convertToPx(value):
         raise ValueError("unknown length value: %s" % value)
 
     length, unit = matched.groups()
+    length = Decimal(length)
     if unit == "":
         return float(length)
     elif unit == "cm":
-        return float(length) * 96 / 2.54
+        return float(length * Decimal("96") / Decimal("2.54"))
     elif unit == "mm":
-        return float(length) * 96 / 2.54 / 10
+        return float(length * Decimal("96") / Decimal("25.4"))
     elif unit == "in":
-        return float(length) * 96
+        return float(length * Decimal("96"))
     elif unit == "pc":
-        return float(length) * 96 / 6
+        return float(length * Decimal("96") / Decimal("6"))
     elif unit == "pt":
-        return float(length) * 96 / 6
+        return float(length * Decimal("96") / Decimal("72"))
     elif unit == "px":
         return float(length)
 
@@ -111,7 +121,7 @@ def _get_size(fhandle):
     height = -1
     width = -1
     fhandle.seek(0)
-    head = fhandle.read(31)
+    head = fhandle.read(64)
     size = len(head)
     # handle GIFs
     if size >= 10 and head[:6] in (b'GIF87a', b'GIF89a'):
@@ -158,6 +168,76 @@ def _get_size(fhandle):
             height, width = struct.unpack('>LL', fhandle.read(8))
         except struct.error:
             raise ValueError("Invalid JPEG2000 file")
+    # handle AVIF
+    elif size >= 16 and head[4:8] == b'ftyp':
+        ftyp_size = struct.unpack('>L', head[:4])[0]
+        if ftyp_size < 8:
+            raise ValueError("Invalid AVIF file")
+        fhandle.seek(8)
+        ftyp_payload = fhandle.read(ftyp_size - 8)
+        if b'avif' in ftyp_payload or b'avis' in ftyp_payload:
+            fhandle.seek(ftyp_size)
+            while True:
+                box_header = fhandle.read(8)
+                if len(box_header) < 8:
+                    break
+                box_size, box_type = struct.unpack('>L4s', box_header)
+                if box_size < 8:
+                    raise ValueError("Invalid AVIF file")
+                box_payload_start = fhandle.tell()
+                box_payload_end = box_payload_start + box_size - 8
+
+                if box_type == b'meta':
+                    # Full box header (version + flags)
+                    fhandle.seek(4, 1)
+                    meta_end = box_payload_end
+                    while fhandle.tell() < meta_end:
+                        meta_box_header = fhandle.read(8)
+                        if len(meta_box_header) < 8:
+                            break
+                        meta_box_size, meta_box_type = struct.unpack('>L4s', meta_box_header)
+                        if meta_box_size < 8:
+                            raise ValueError("Invalid AVIF file")
+                        meta_box_payload_start = fhandle.tell()
+                        meta_box_payload_end = meta_box_payload_start + meta_box_size - 8
+
+                        if meta_box_type == b'iprp':
+                            while fhandle.tell() < meta_box_payload_end:
+                                prop_box_header = fhandle.read(8)
+                                if len(prop_box_header) < 8:
+                                    break
+                                prop_box_size, prop_box_type = struct.unpack('>L4s', prop_box_header)
+                                if prop_box_size < 8:
+                                    raise ValueError("Invalid AVIF file")
+                                prop_box_payload_start = fhandle.tell()
+                                prop_box_payload_end = prop_box_payload_start + prop_box_size - 8
+
+                                if prop_box_type == b'ipco':
+                                    while fhandle.tell() < prop_box_payload_end:
+                                        item_box_header = fhandle.read(8)
+                                        if len(item_box_header) < 8:
+                                            break
+                                        item_box_size, item_box_type = struct.unpack('>L4s', item_box_header)
+                                        if item_box_size < 8:
+                                            raise ValueError("Invalid AVIF file")
+                                        item_box_payload_start = fhandle.tell()
+                                        item_box_payload_end = item_box_payload_start + item_box_size - 8
+
+                                        if item_box_type == b'ispe':
+                                            # Full box header (version + flags)
+                                            fhandle.seek(4, 1)
+                                            width, height = struct.unpack('>LL', fhandle.read(8))
+                                            return width, height
+
+                                        fhandle.seek(item_box_payload_end)
+                                else:
+                                    fhandle.seek(prop_box_payload_end)
+                        else:
+                            fhandle.seek(meta_box_payload_end)
+
+                fhandle.seek(box_payload_end)
+
+            raise ValueError("Invalid AVIF file")
     # handle big endian TIFF
     elif size >= 8 and head.startswith(b"\x4d\x4d\x00\x2a"):
         offset = struct.unpack('>L', head[4:8])[0]
@@ -428,7 +508,10 @@ def get(filepath: FileInput) -> Tuple[int, int]:
     :type filepath: Union[bytes, str, pathlib.Path]
     :rtype Tuple[int, int]
     """
-    info = get_info(filepath, size=True, dpi=False, colors=False)
+    try:
+        info = get_info(filepath, size=True, dpi=False, colors=False)
+    except Exception:
+        return -1, -1
     return info.width, info.height
 
 
@@ -439,5 +522,8 @@ def getDPI(filepath: FileInput) -> Tuple[int, int]:
     :type filepath: Union[bytes, str, pathlib.Path]
     :rtype Tuple[int, int]
     """
-    info = get_info(filepath, size=False, dpi=True, colors=False)
+    try:
+        info = get_info(filepath, size=False, dpi=True, colors=False)
+    except Exception:
+        return -1, -1
     return info.xdpi, info.ydpi
