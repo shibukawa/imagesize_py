@@ -18,13 +18,14 @@ class GetInfoTest(unittest.TestCase):
         self.assertEqual(info.channels, 4)
 
     def test_get_info_selective_fields(self):
-        info = imagesize.get_info(os.path.join(imagedir, "test.png"), size=True, dpi=False, colors=False, channels=False)
+        info = imagesize.get_info(os.path.join(imagedir, "test.png"), size=True, dpi=False, colors=False, channels=False, exif_rotation=False)
         self.assertEqual(info.width, 802)
         self.assertEqual(info.height, 670)
         self.assertEqual(info.xdpi, -1)
         self.assertEqual(info.ydpi, -1)
         self.assertEqual(info.colors, -1)
         self.assertEqual(info.channels, -1)
+        self.assertEqual(info.rotation, -1)
 
     def test_legacy_aliases(self):
         size = imagesize.get(os.path.join(imagedir, "test.jpg"))
@@ -44,3 +45,30 @@ class GetInfoTest(unittest.TestCase):
         missing = os.path.join(imagedir, "missing-file.png")
         self.assertEqual(imagesize.get(missing), (-1, -1))
         self.assertEqual(imagesize.getDPI(missing), (-1, -1))
+    
+    def test_get_info_applies_exif_rotation_by_default(self):
+        info = imagesize.get_info(os.path.join(imagedir, "test-rotated.jpg"), dpi=False, colors=False)
+        self.assertEqual(info.width, 670)
+        self.assertEqual(info.height, 802)
+        self.assertEqual(info.rotation, 6)
+
+
+    def test_get_info_can_disable_exif_rotation(self):
+        info = imagesize.get_info(os.path.join(imagedir, "test-rotated.jpg"), dpi=False, colors=False, exif_rotation=False)
+        self.assertEqual(info.width, 802)
+        self.assertEqual(info.height, 670)
+        self.assertEqual(info.rotation, 6)
+
+
+    def test_get_info_applies_tiff_rotation_by_default(self):
+        info = imagesize.get_info(os.path.join(imagedir, "test-rotated.tiff"), dpi=False, colors=False)
+        self.assertEqual(info.width, 670)
+        self.assertEqual(info.height, 802)
+        self.assertEqual(info.rotation, 6)
+
+
+    def test_get_info_can_disable_tiff_rotation(self):
+        info = imagesize.get_info(os.path.join(imagedir, "test-rotated.tiff"), dpi=False, colors=False, exif_rotation=False)
+        self.assertEqual(info.width, 802)
+        self.assertEqual(info.height, 670)
+        self.assertEqual(info.rotation, 6)
