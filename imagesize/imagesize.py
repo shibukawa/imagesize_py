@@ -1,8 +1,8 @@
-import io
 import os
 import re
 import struct
-from typing import BinaryIO, NamedTuple, Tuple, Union
+from decimal import Decimal
+from typing import BinaryIO, NamedTuple, Protocol, Tuple, Union, runtime_checkable
 
 from xml.etree import ElementTree
 
@@ -34,8 +34,17 @@ _TIFF_TYPE_SIZES = {
 }
 
 
+@runtime_checkable
+class ReadSeekBinary(Protocol):
+    def read(self, size: int = -1) -> bytes:
+        ...
+
+    def seek(self, offset: int, whence: int = 0) -> int:
+        ...
+
+
 PathInput = Union[str, bytes, os.PathLike]
-FileInput = Union[PathInput, BinaryIO]
+FileInput = Union[PathInput, BinaryIO, ReadSeekBinary]
 
 
 class ImageInfo(NamedTuple):
@@ -46,8 +55,8 @@ class ImageInfo(NamedTuple):
     colors: int = -1
 
 
-def _open_file(filepath):
-    if isinstance(filepath, (io.BytesIO, io.BufferedReader)):
+def _open_file(filepath: FileInput):
+    if isinstance(filepath, ReadSeekBinary):
         return filepath, False
     return open(filepath, 'rb'), True
 
@@ -82,18 +91,19 @@ def _convertToPx(value):
         raise ValueError("unknown length value: %s" % value)
 
     length, unit = matched.groups()
+    length = Decimal(length)
     if unit == "":
         return float(length)
     elif unit == "cm":
-        return float(length) * 96 / 2.54
+        return float(length * Decimal("96") / Decimal("2.54"))
     elif unit == "mm":
-        return float(length) * 96 / 2.54 / 10
+        return float(length * Decimal("96") / Decimal("25.4"))
     elif unit == "in":
-        return float(length) * 96
+        return float(length * Decimal("96"))
     elif unit == "pc":
-        return float(length) * 96 / 6
+        return float(length * Decimal("96") / Decimal("6"))
     elif unit == "pt":
-        return float(length) * 96 / 72
+        return float(length * Decimal("96") / Decimal("72"))
     elif unit == "px":
         return float(length)
 
@@ -421,7 +431,10 @@ def get(filepath: FileInput) -> Tuple[int, int]:
     :type filepath: Union[bytes, str, pathlib.Path]
     :rtype Tuple[int, int]
     """
-    info = get_info(filepath, size=True, dpi=False, colors=False)
+    try:
+        info = get_info(filepath, size=True, dpi=False, colors=False)
+    except Exception:
+        return -1, -1
     return info.width, info.height
 
 
@@ -432,5 +445,8 @@ def getDPI(filepath: FileInput) -> Tuple[int, int]:
     :type filepath: Union[bytes, str, pathlib.Path]
     :rtype Tuple[int, int]
     """
-    info = get_info(filepath, size=False, dpi=True, colors=False)
+    try:
+        info = get_info(filepath, size=False, dpi=True, colors=False)
+    except Exception:
+        return -1, -1
     return info.xdpi, info.ydpi

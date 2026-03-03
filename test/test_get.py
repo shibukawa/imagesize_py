@@ -50,6 +50,14 @@ class GetTest(unittest.TestCase):
         self.assertEqual(width, 90)
         self.assertEqual(height, 60)
 
+    def test_load_svg_float_length(self):
+        from io import BytesIO
+
+        filelike = BytesIO(b'<svg width="25.4mm" height="12.7mm" xmlns="http://www.w3.org/2000/svg"></svg>')
+        width, height = imagesize.get(filelike)
+        self.assertEqual(width, 96)
+        self.assertEqual(height, 48)
+
     def test_littleendian_tiff(self):
         width, height = imagesize.get(os.path.join(imagedir, "multipage_tiff_example.tif"))
         self.assertEqual(width, 800)
