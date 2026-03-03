@@ -55,6 +55,14 @@ class GetTest(unittest.TestCase):
         self.assertEqual(width, 800)
         self.assertEqual(height, 600)
 
+    def test_load_svg_pt(self):
+        from io import BytesIO
+
+        svg = b'<svg xmlns="http://www.w3.org/2000/svg" width="72pt" height="36pt"></svg>'
+        width, height = imagesize.get(BytesIO(svg))
+        self.assertEqual(width, 96)
+        self.assertEqual(height, 48)
+
     def test_load_png_filelike(self):
         """ test_load_png_filelike
         """
