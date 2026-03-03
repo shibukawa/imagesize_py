@@ -3,6 +3,8 @@ import re
 import struct
 from decimal import Decimal
 from typing import BinaryIO, NamedTuple, Protocol, Tuple, Union, runtime_checkable
+from urllib.parse import urlparse
+from urllib.request import urlopen
 
 from xml.etree import ElementTree
 
@@ -58,6 +60,11 @@ class ImageInfo(NamedTuple):
 def _open_file(filepath: FileInput):
     if isinstance(filepath, ReadSeekBinary):
         return filepath, False
+    if isinstance(filepath, str):
+        parsed = urlparse(filepath)
+        if parsed.scheme in ("http", "https"):
+            with urlopen(filepath) as response:
+                return io.BytesIO(response.read()), True
     return open(filepath, 'rb'), True
 
 
