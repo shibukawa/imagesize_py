@@ -5,6 +5,9 @@ import imagesize
 
 
 imagedir = os.path.join(os.path.dirname(__file__), "images")
+ROTATED_HEIC = os.path.join(imagedir, "test_rotated.heic")
+if not os.path.exists(ROTATED_HEIC):
+    ROTATED_HEIC = os.path.join(imagedir, "test-rotated.heic")
 
 
 class GetInfoTest(unittest.TestCase):
@@ -72,3 +75,15 @@ class GetInfoTest(unittest.TestCase):
         self.assertEqual(info.width, 802)
         self.assertEqual(info.height, 670)
         self.assertEqual(info.rotation, 6)
+
+    def test_get_info_applies_heic_rotation_by_default(self):
+        info = imagesize.get_info(ROTATED_HEIC, dpi=False, colors=False)
+        raw = imagesize.get_info(ROTATED_HEIC, dpi=False, colors=False, exif_rotation=False)
+        expected = (raw.height, raw.width) if raw.rotation in {5, 6, 7, 8} else (raw.width, raw.height)
+        self.assertEqual((info.width, info.height), expected)
+        self.assertEqual(info.rotation, raw.rotation)
+
+    def test_get_info_can_disable_heic_rotation(self):
+        info = imagesize.get_info(ROTATED_HEIC, dpi=False, colors=False, exif_rotation=False)
+        self.assertEqual(info.width, 1440)
+        self.assertEqual(info.height, 960)
