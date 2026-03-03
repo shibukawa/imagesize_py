@@ -91,3 +91,6 @@ Thank you for feedback:
 * mikey (https://github.com/ffreemt)
 * Marco (https://github.com/marcoffee)
 * ExtReMLapin (https://github.com/ExtReMLapin)
+* gremur (https://github.com/gremur)
+* fuyb1992 (https://github.com/fuyb1992)
+* flagman (https://github.com/flagman)
