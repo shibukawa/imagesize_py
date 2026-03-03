@@ -1,3 +1,4 @@
+import pytest
 import os
 import imagesize
 
@@ -31,9 +32,11 @@ def test_legacy_aliases():
 
 
 def test_get_info_invalid_input():
-    info = imagesize.get_info(os.path.join(imagedir, "missing-file.png"))
-    assert info.width == -1
-    assert info.height == -1
-    assert info.xdpi == -1
-    assert info.ydpi == -1
-    assert info.colors == -1
+    with pytest.raises(FileNotFoundError):
+        imagesize.get_info(os.path.join(imagedir, "missing-file.png"))
+
+
+def test_shortcuts_invalid_input():
+    missing = os.path.join(imagedir, "missing-file.png")
+    assert imagesize.get(missing) == (-1, -1)
+    assert imagesize.getDPI(missing) == (-1, -1)

@@ -407,26 +407,19 @@ def _get_colors(fhandle):
 
 
 def get_info(filepath: FileInput, *, size: bool = True, dpi: bool = True, colors: bool = True) -> ImageInfo:
-    width = height = xdpi = ydpi = color_count = -1
+    fhandle, should_close = _open_file(filepath)
     try:
-        fhandle, should_close = _open_file(filepath)
-    except Exception:
-        return ImageInfo(width=width, height=height, xdpi=xdpi, ydpi=ydpi, colors=color_count)
-
-    try:
+        width = height = xdpi = ydpi = color_count = -1
         if size:
             width, height = _get_size(fhandle)
         if dpi:
             xdpi, ydpi = _get_dpi(fhandle)
         if colors:
             color_count = _get_colors(fhandle)
-    except Exception:
-        pass
+        return ImageInfo(width=width, height=height, xdpi=xdpi, ydpi=ydpi, colors=color_count)
     finally:
         if should_close:
             fhandle.close()
-
-    return ImageInfo(width=width, height=height, xdpi=xdpi, ydpi=ydpi, colors=color_count)
 
 
 def get(filepath: FileInput) -> Tuple[int, int]:
@@ -436,7 +429,10 @@ def get(filepath: FileInput) -> Tuple[int, int]:
     :type filepath: Union[bytes, str, pathlib.Path]
     :rtype Tuple[int, int]
     """
-    info = get_info(filepath, size=True, dpi=False, colors=False)
+    try:
+        info = get_info(filepath, size=True, dpi=False, colors=False)
+    except Exception:
+        return -1, -1
     return info.width, info.height
 
 
@@ -447,5 +443,8 @@ def getDPI(filepath: FileInput) -> Tuple[int, int]:
     :type filepath: Union[bytes, str, pathlib.Path]
     :rtype Tuple[int, int]
     """
-    info = get_info(filepath, size=False, dpi=True, colors=False)
+    try:
+        info = get_info(filepath, size=False, dpi=True, colors=False)
+    except Exception:
+        return -1, -1
     return info.xdpi, info.ydpi
