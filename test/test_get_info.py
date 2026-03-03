@@ -18,7 +18,7 @@ class GetInfoTest(unittest.TestCase):
         self.assertEqual(info.channels, 4)
 
     def test_get_info_selective_fields(self):
-        info = imagesize.get_info(os.path.join(imagedir, "test.png"), size=True, dpi=False, colors=False)
+        info = imagesize.get_info(os.path.join(imagedir, "test.png"), size=True, dpi=False, colors=False, channels=False)
         self.assertEqual(info.width, 802)
         self.assertEqual(info.height, 670)
         self.assertEqual(info.xdpi, -1)
