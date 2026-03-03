@@ -12,15 +12,17 @@ def test_get_info_defaults():
     assert info.xdpi == 72
     assert info.ydpi == 72
     assert info.colors == 16777216
+    assert info.channels == 4
 
 
 def test_get_info_selective_fields():
-    info = imagesize.get_info(os.path.join(imagedir, "test.png"), size=True, dpi=False, colors=False)
+    info = imagesize.get_info(os.path.join(imagedir, "test.png"), size=True, dpi=False, colors=False, channels=False)
     assert info.width == 802
     assert info.height == 670
     assert info.xdpi == -1
     assert info.ydpi == -1
     assert info.colors == -1
+    assert info.channels == -1
 
 
 def test_legacy_aliases():
@@ -28,3 +30,8 @@ def test_legacy_aliases():
     dpi = imagesize.getDPI(os.path.join(imagedir, "test.jpg"))
     assert size == (802, 670)
     assert dpi == (72, 72)
+
+
+def test_get_info_channels_jpeg():
+    info = imagesize.get_info(os.path.join(imagedir, "test.jpg"), size=False, dpi=False, colors=False)
+    assert info.channels == 3
