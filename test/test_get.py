@@ -132,6 +132,16 @@ class GetTest(unittest.TestCase):
         self.assertEqual(width, 800)
         self.assertEqual(height, 600)
 
+    def test_load_avif(self):
+        width, height = imagesize.get(os.path.join(imagedir, "test.avif"))
+        self.assertEqual(width, 630)
+        self.assertEqual(height, 420)
+
+    def test_load_avif_bytes(self):
+        width, height = imagesize.get(os.path.join(imagedir_bytes, b"test.avif"))
+        self.assertEqual(width, 630)
+        self.assertEqual(height, 420)
+
     def test_load_webp_vp8x(self):
         """Test VP8X format WebP file parsing.
         

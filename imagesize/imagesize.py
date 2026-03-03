@@ -114,7 +114,7 @@ def _get_size(fhandle):
     height = -1
     width = -1
     fhandle.seek(0)
-    head = fhandle.read(31)
+    head = fhandle.read(64)
     size = len(head)
     # handle GIFs
     if size >= 10 and head[:6] in (b'GIF87a', b'GIF89a'):
@@ -161,6 +161,76 @@ def _get_size(fhandle):
             height, width = struct.unpack('>LL', fhandle.read(8))
         except struct.error:
             raise ValueError("Invalid JPEG2000 file")
+    # handle AVIF
+    elif size >= 16 and head[4:8] == b'ftyp':
+        ftyp_size = struct.unpack('>L', head[:4])[0]
+        if ftyp_size < 8:
+            raise ValueError("Invalid AVIF file")
+        fhandle.seek(8)
+        ftyp_payload = fhandle.read(ftyp_size - 8)
+        if b'avif' in ftyp_payload or b'avis' in ftyp_payload:
+            fhandle.seek(ftyp_size)
+            while True:
+                box_header = fhandle.read(8)
+                if len(box_header) < 8:
+                    break
+                box_size, box_type = struct.unpack('>L4s', box_header)
+                if box_size < 8:
+                    raise ValueError("Invalid AVIF file")
+                box_payload_start = fhandle.tell()
+                box_payload_end = box_payload_start + box_size - 8
+
+                if box_type == b'meta':
+                    # Full box header (version + flags)
+                    fhandle.seek(4, 1)
+                    meta_end = box_payload_end
+                    while fhandle.tell() < meta_end:
+                        meta_box_header = fhandle.read(8)
+                        if len(meta_box_header) < 8:
+                            break
+                        meta_box_size, meta_box_type = struct.unpack('>L4s', meta_box_header)
+                        if meta_box_size < 8:
+                            raise ValueError("Invalid AVIF file")
+                        meta_box_payload_start = fhandle.tell()
+                        meta_box_payload_end = meta_box_payload_start + meta_box_size - 8
+
+                        if meta_box_type == b'iprp':
+                            while fhandle.tell() < meta_box_payload_end:
+                                prop_box_header = fhandle.read(8)
+                                if len(prop_box_header) < 8:
+                                    break
+                                prop_box_size, prop_box_type = struct.unpack('>L4s', prop_box_header)
+                                if prop_box_size < 8:
+                                    raise ValueError("Invalid AVIF file")
+                                prop_box_payload_start = fhandle.tell()
+                                prop_box_payload_end = prop_box_payload_start + prop_box_size - 8
+
+                                if prop_box_type == b'ipco':
+                                    while fhandle.tell() < prop_box_payload_end:
+                                        item_box_header = fhandle.read(8)
+                                        if len(item_box_header) < 8:
+                                            break
+                                        item_box_size, item_box_type = struct.unpack('>L4s', item_box_header)
+                                        if item_box_size < 8:
+                                            raise ValueError("Invalid AVIF file")
+                                        item_box_payload_start = fhandle.tell()
+                                        item_box_payload_end = item_box_payload_start + item_box_size - 8
+
+                                        if item_box_type == b'ispe':
+                                            # Full box header (version + flags)
+                                            fhandle.seek(4, 1)
+                                            width, height = struct.unpack('>LL', fhandle.read(8))
+                                            return width, height
+
+                                        fhandle.seek(item_box_payload_end)
+                                else:
+                                    fhandle.seek(prop_box_payload_end)
+                        else:
+                            fhandle.seek(meta_box_payload_end)
+
+                fhandle.seek(box_payload_end)
+
+            raise ValueError("Invalid AVIF file")
     # handle big endian TIFF
     elif size >= 8 and head.startswith(b"\x4d\x4d\x00\x2a"):
         offset = struct.unpack('>L', head[4:8])[0]
