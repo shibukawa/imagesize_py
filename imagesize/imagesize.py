@@ -103,7 +103,7 @@ def _convertToPx(value):
     elif unit == "pc":
         return float(length * Decimal("96") / Decimal("6"))
     elif unit == "pt":
-        return float(length * Decimal("96") / Decimal("6"))
+        return float(length * Decimal("96") / Decimal("72"))
     elif unit == "px":
         return float(length)
 
