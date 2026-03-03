@@ -16,7 +16,7 @@ imagesize
     :target: https://github.com/shibukawa/imagesize_py/blob/main/LICENSE.rst
     :alt: License
 
-This module analyzes JPEG/JPEG 2000/PNG/GIF/TIFF/SVG/Netpbm/WebP/AVIF image headers and returns image size, DPI, and related metadata.
+This module analyzes JPEG/JPEG 2000/PNG/GIF/TIFF/SVG/Netpbm/WebP/BMP/AVIF/HEIC/HEIF image headers and returns image size, DPI, and related metadata.
 
 .. code:: python
 
@@ -35,16 +35,52 @@ This module is a pure Python module. You can use file like object like file or s
 
 Supported Python versions: 3.10-3.14
 
+Installation
+----------------
+
+.. code:: bash
+
+   pip install imagesize
+
+For local development setup:
+
+.. code:: bash
+
+   python -m venv .venv
+   source .venv/bin/activate
+   pip install -e .
+
+Version 2.0 migration notes
+-----------------------------
+
+Version 2.0 includes the following updates:
+
+* Added/expanded support for ``BMP``.
+* Added support for ``AVIF``.
+* Added support for ``HEIC/HEIF``.
+* ``imagesize.get_info()`` now returns richer metadata including color depth, channel count, and rotation information.
+* Improved EXIF orientation handling so JPEG, TIFF, AVIF, and HEIC/HEIF return sizes that correctly reflect EXIF rotation metadata.
+* Added type hints for the public API and related input/output types.
+
+Backward incompatible behavior in 2.0:
+
+* ``imagesize.get()`` now returns ``(-1, -1)`` when parsing fails.
+* ``imagesize.getDPI()`` now returns ``(-1, -1)`` when parsing fails.
+
+If your existing code relied on exceptions during parse failures, update it to explicitly check return values.
+
 API
 -----
 
 * ``imagesize.get(filepath: FileInput, *, exif_rotation: bool = True) -> tuple[int, int]``
 
   Returns image size as ``(width, height)``. By default, orientation metadata is applied for rotated JPEG/TIFF images; pass ``exif_rotation=False`` to get the stored size as-is.
+  On parsing errors it returns ``(-1, -1)``.
 
 * ``imagesize.getDPI(filepath: FileInput) -> tuple[int, int]``
 
   Returns image DPI as ``(xdpi, ydpi)``.
+  On parsing errors it returns ``(-1, -1)``.
 
 * ``imagesize.get_info(filepath: FileInput, *, size: bool = True, dpi: bool = True, colors: bool = True, exif_rotation: bool = True, channels: bool = True) -> ImageInfo``
 
