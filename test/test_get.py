@@ -10,6 +10,9 @@ bmpfile = os.path.join(imagedir, "test_24.bmp")
 bmpfile_bytes = os.path.join(imagedir_bytes, b"test_24.bmp")
 ROTATED_JPEG = os.path.join(imagedir, "test-rotated.jpg")
 ROTATED_TIFF = os.path.join(imagedir, "test-rotated.tiff")
+ROTATED_HEIC = os.path.join(imagedir, "test_rotated.heic")
+if not os.path.exists(ROTATED_HEIC):
+    ROTATED_HEIC = os.path.join(imagedir, "test-rotated.heic")
 
 
 class GetTest(unittest.TestCase):
@@ -140,6 +143,16 @@ class GetTest(unittest.TestCase):
         self.assertEqual(width, 630)
         self.assertEqual(height, 420)
 
+    def test_load_heic(self):
+        width, height = imagesize.get(os.path.join(imagedir, "test.heic"))
+        self.assertEqual(width, 1440)
+        self.assertEqual(height, 960)
+
+    def test_load_heic_bytes(self):
+        width, height = imagesize.get(os.path.join(imagedir_bytes, b"test.heic"))
+        self.assertEqual(width, 1440)
+        self.assertEqual(height, 960)
+
     def test_load_webp_vp8x(self):
         """Test VP8X format WebP file parsing.
         
@@ -210,3 +223,14 @@ class GetTest(unittest.TestCase):
         width, height = imagesize.get(ROTATED_TIFF, exif_rotation=False)
         self.assertEqual(width, 802)
         self.assertEqual(height, 670)
+
+    def test_load_heic_with_exif_rotation_default(self):
+        width, height = imagesize.get(ROTATED_HEIC)
+        info = imagesize.get_info(ROTATED_HEIC, dpi=False, colors=False, channels=False, exif_rotation=False)
+        expected = (info.height, info.width) if info.rotation in {5, 6, 7, 8} else (info.width, info.height)
+        self.assertEqual((width, height), expected)
+
+    def test_load_heic_with_exif_rotation_disabled(self):
+        width, height = imagesize.get(ROTATED_HEIC, exif_rotation=False)
+        self.assertEqual(width, 1440)
+        self.assertEqual(height, 960)

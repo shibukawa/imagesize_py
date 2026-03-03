@@ -1,3 +1,4 @@
+import io
 import os
 import re
 import struct
@@ -33,6 +34,19 @@ _TIFF_TYPE_SIZES = {
   10: 8,
   11: 4,
   12: 8,
+}
+
+_HEIF_BRANDS = {
+    b'avif', b'avis',
+    b'heic', b'heix', b'hevc', b'hevx',
+    b'mif1', b'msf1',
+}
+
+_HEIF_IROT_TO_EXIF = {
+    0: 1,
+    1: 6,
+    2: 3,
+    3: 8,
 }
 
 
@@ -170,76 +184,18 @@ def _get_size(fhandle):
             height, width = struct.unpack('>LL', fhandle.read(8))
         except struct.error:
             raise ValueError("Invalid JPEG2000 file")
-    # handle AVIF
+    # handle AVIF/HEIF
     elif size >= 16 and head[4:8] == b'ftyp':
         ftyp_size = struct.unpack('>L', head[:4])[0]
         if ftyp_size < 8:
-            raise ValueError("Invalid AVIF file")
+            raise ValueError("Invalid HEIF file")
         fhandle.seek(8)
         ftyp_payload = fhandle.read(ftyp_size - 8)
-        if b'avif' in ftyp_payload or b'avis' in ftyp_payload:
-            fhandle.seek(ftyp_size)
-            while True:
-                box_header = fhandle.read(8)
-                if len(box_header) < 8:
-                    break
-                box_size, box_type = struct.unpack('>L4s', box_header)
-                if box_size < 8:
-                    raise ValueError("Invalid AVIF file")
-                box_payload_start = fhandle.tell()
-                box_payload_end = box_payload_start + box_size - 8
-
-                if box_type == b'meta':
-                    # Full box header (version + flags)
-                    fhandle.seek(4, 1)
-                    meta_end = box_payload_end
-                    while fhandle.tell() < meta_end:
-                        meta_box_header = fhandle.read(8)
-                        if len(meta_box_header) < 8:
-                            break
-                        meta_box_size, meta_box_type = struct.unpack('>L4s', meta_box_header)
-                        if meta_box_size < 8:
-                            raise ValueError("Invalid AVIF file")
-                        meta_box_payload_start = fhandle.tell()
-                        meta_box_payload_end = meta_box_payload_start + meta_box_size - 8
-
-                        if meta_box_type == b'iprp':
-                            while fhandle.tell() < meta_box_payload_end:
-                                prop_box_header = fhandle.read(8)
-                                if len(prop_box_header) < 8:
-                                    break
-                                prop_box_size, prop_box_type = struct.unpack('>L4s', prop_box_header)
-                                if prop_box_size < 8:
-                                    raise ValueError("Invalid AVIF file")
-                                prop_box_payload_start = fhandle.tell()
-                                prop_box_payload_end = prop_box_payload_start + prop_box_size - 8
-
-                                if prop_box_type == b'ipco':
-                                    while fhandle.tell() < prop_box_payload_end:
-                                        item_box_header = fhandle.read(8)
-                                        if len(item_box_header) < 8:
-                                            break
-                                        item_box_size, item_box_type = struct.unpack('>L4s', item_box_header)
-                                        if item_box_size < 8:
-                                            raise ValueError("Invalid AVIF file")
-                                        item_box_payload_start = fhandle.tell()
-                                        item_box_payload_end = item_box_payload_start + item_box_size - 8
-
-                                        if item_box_type == b'ispe':
-                                            # Full box header (version + flags)
-                                            fhandle.seek(4, 1)
-                                            width, height = struct.unpack('>LL', fhandle.read(8))
-                                            return width, height
-
-                                        fhandle.seek(item_box_payload_end)
-                                else:
-                                    fhandle.seek(prop_box_payload_end)
-                        else:
-                            fhandle.seek(meta_box_payload_end)
-
-                fhandle.seek(box_payload_end)
-
-            raise ValueError("Invalid AVIF file")
+        if any(brand in ftyp_payload for brand in _HEIF_BRANDS):
+            width, height, _ = _read_heif_metadata(fhandle)
+            if width != -1 and height != -1:
+                return width, height
+            raise ValueError("Invalid HEIF file")
     # handle big endian TIFF
     elif size >= 8 and head.startswith(b"\x4d\x4d\x00\x2a"):
         offset = struct.unpack('>L', head[4:8])[0]
@@ -395,43 +351,163 @@ def _read_jpeg_exif_rotation(fhandle):
         if marker_code != b'\xe1' or not payload.startswith(b'Exif\x00\x00'):
             continue
 
-        exif_data = payload[6:]
-        if len(exif_data) < 8:
-            return -1
-        endian_token = exif_data[:2]
-        if endian_token == b'II':
-            endian = '<'
-        elif endian_token == b'MM':
-            endian = '>'
-        else:
-            return -1
-
-        try:
-            first_ifd_offset = struct.unpack(endian + 'L', exif_data[4:8])[0]
-        except struct.error:
-            return -1
-        if first_ifd_offset + 2 > len(exif_data):
-            return -1
-
-        try:
-            ifd_count = struct.unpack(endian + 'H', exif_data[first_ifd_offset:first_ifd_offset + 2])[0]
-        except struct.error:
-            return -1
-        cursor = first_ifd_offset + 2
-
-        for _ in range(ifd_count):
-            if cursor + 12 > len(exif_data):
-                return -1
-            try:
-                tag, datatype, count, value = struct.unpack(endian + 'HHLL', exif_data[cursor:cursor + 12])
-            except struct.error:
-                return -1
-            if tag == 0x0112 and datatype == 3 and count == 1:
-                return int(value / 65536) if endian == '>' else value & 0xFFFF
-            cursor += 12
-        return -1
+        return _read_orientation_from_exif_payload(payload[6:])
 
     return -1
+
+
+def _read_orientation_from_exif_payload(exif_data):
+    if len(exif_data) < 8:
+        return -1
+    endian_token = exif_data[:2]
+    if endian_token == b'II':
+        endian = '<'
+    elif endian_token == b'MM':
+        endian = '>'
+    else:
+        return -1
+
+    try:
+        first_ifd_offset = struct.unpack(endian + 'L', exif_data[4:8])[0]
+    except struct.error:
+        return -1
+    if first_ifd_offset + 2 > len(exif_data):
+        return -1
+
+    try:
+        ifd_count = struct.unpack(endian + 'H', exif_data[first_ifd_offset:first_ifd_offset + 2])[0]
+    except struct.error:
+        return -1
+    cursor = first_ifd_offset + 2
+
+    for _ in range(ifd_count):
+        if cursor + 12 > len(exif_data):
+            return -1
+        try:
+            tag, datatype, count, value = struct.unpack(endian + 'HHLL', exif_data[cursor:cursor + 12])
+        except struct.error:
+            return -1
+        if tag == 0x0112 and datatype == 3 and count == 1:
+            return int(value / 65536) if endian == '>' else value & 0xFFFF
+        cursor += 12
+    return -1
+
+
+def _read_heif_exif_rotation(fhandle):
+    _, _, property_rotation = _read_heif_metadata(fhandle)
+    if property_rotation != -1:
+        return property_rotation
+
+    fhandle.seek(0)
+    data = fhandle.read()
+    marker = b'Exif\x00\x00'
+    start = data.find(marker)
+    if start == -1:
+        return -1
+    return _read_orientation_from_exif_payload(data[start + len(marker):])
+
+
+def _iter_iso_boxes(data, start, end):
+    offset = start
+    while offset + 8 <= end:
+        size = struct.unpack('>L', data[offset:offset + 4])[0]
+        box_type = data[offset + 4:offset + 8]
+        header_size = 8
+        if size == 1:
+            if offset + 16 > end:
+                return
+            size = struct.unpack('>Q', data[offset + 8:offset + 16])[0]
+            header_size = 16
+        elif size == 0:
+            size = end - offset
+        if size < header_size or offset + size > end:
+            return
+        yield offset, size, box_type, header_size
+        offset += size
+
+
+def _read_heif_metadata(fhandle):
+    fhandle.seek(0)
+    data = fhandle.read()
+
+    meta_box = None
+    for offset, size, box_type, header_size in _iter_iso_boxes(data, 0, len(data)):
+        if box_type == b'meta':
+            meta_box = (offset, size, header_size)
+            break
+    if meta_box is None:
+        return -1, -1, -1
+
+    meta_offset, meta_size, meta_header = meta_box
+    meta_start = meta_offset + meta_header + 4
+    meta_end = meta_offset + meta_size
+
+    primary_item_id = None
+    properties = []
+    associations = {}
+
+    for offset, size, box_type, header_size in _iter_iso_boxes(data, meta_start, meta_end):
+        payload_start = offset + header_size
+        payload_end = offset + size
+        if box_type == b'pitm':
+            version = data[payload_start]
+            if version == 0 and payload_start + 6 <= payload_end:
+                primary_item_id = struct.unpack('>H', data[payload_start + 4:payload_start + 6])[0]
+            elif version > 0 and payload_start + 8 <= payload_end:
+                primary_item_id = struct.unpack('>L', data[payload_start + 4:payload_start + 8])[0]
+        elif box_type == b'iprp':
+            for p_offset, p_size, p_type, p_header in _iter_iso_boxes(data, payload_start, payload_end):
+                p_payload_start = p_offset + p_header
+                p_payload_end = p_offset + p_size
+                if p_type == b'ipco':
+                    properties = list(_iter_iso_boxes(data, p_payload_start, p_payload_end))
+                elif p_type == b'ipma' and p_payload_start + 8 <= p_payload_end:
+                    flags = int.from_bytes(data[p_payload_start + 1:p_payload_start + 4], 'big')
+                    is_large_index = bool(flags & 1)
+                    cursor = p_payload_start + 4
+                    if cursor + 4 > p_payload_end:
+                        continue
+                    entry_count = struct.unpack('>L', data[cursor:cursor + 4])[0]
+                    cursor += 4
+                    for _ in range(entry_count):
+                        if cursor + 3 > p_payload_end:
+                            break
+                        item_id = struct.unpack('>H', data[cursor:cursor + 2])[0]
+                        cursor += 2
+                        assoc_count = data[cursor]
+                        cursor += 1
+                        item_props = []
+                        for _ in range(assoc_count):
+                            if is_large_index:
+                                if cursor + 2 > p_payload_end:
+                                    break
+                                value = struct.unpack('>H', data[cursor:cursor + 2])[0]
+                                cursor += 2
+                                item_props.append(value & 0x7FFF)
+                            else:
+                                if cursor + 1 > p_payload_end:
+                                    break
+                                value = data[cursor]
+                                cursor += 1
+                                item_props.append(value & 0x7F)
+                        associations[item_id] = item_props
+
+    if not properties:
+        return -1, -1, -1
+
+    target_indexes = associations.get(primary_item_id, list(range(1, len(properties) + 1)))
+    width = height = rotation = -1
+    for index in target_indexes:
+        if not (1 <= index <= len(properties)):
+            continue
+        p_offset, p_size, p_type, p_header = properties[index - 1]
+        p_payload_start = p_offset + p_header
+        if p_type == b'ispe' and p_payload_start + 12 <= p_offset + p_size:
+            width, height = struct.unpack('>LL', data[p_payload_start + 4:p_payload_start + 12])
+        elif p_type == b'irot' and p_payload_start + 5 <= p_offset + p_size:
+            rotation = _HEIF_IROT_TO_EXIF.get(data[p_payload_start + 4] & 0x03, -1)
+
+    return width, height, rotation
 
 
 def _read_tiff_rotation(fhandle):
@@ -498,6 +574,9 @@ def _read_tiff_rotation(fhandle):
 
 def _get_rotation(fhandle):
     rotation = _read_jpeg_exif_rotation(fhandle)
+    if rotation != -1:
+        return rotation
+    rotation = _read_heif_exif_rotation(fhandle)
     if rotation != -1:
         return rotation
     return _read_tiff_rotation(fhandle)
