@@ -1,8 +1,12 @@
 import os
+import unittest
+
 import imagesize
 
 
 imagedir = os.path.join(os.path.dirname(__file__), "images")
+ROTATED_JPEG = os.path.join(imagedir, "test-rotated.jpg")
+ROTATED_TIFF = os.path.join(imagedir, "test-rotated.tiff")
 
 
 def test_get_info_defaults():
@@ -28,3 +32,31 @@ def test_legacy_aliases():
     dpi = imagesize.getDPI(os.path.join(imagedir, "test.jpg"))
     assert size == (802, 670)
     assert dpi == (72, 72)
+
+
+def test_get_info_applies_exif_rotation_by_default():
+    info = imagesize.get_info(ROTATED_JPEG, dpi=False, colors=False)
+    assert info.width == 20
+    assert info.height == 40
+    assert info.rotation == 6
+
+
+def test_get_info_can_disable_exif_rotation():
+    info = imagesize.get_info(ROTATED_JPEG, dpi=False, colors=False, exif_rotation=False)
+    assert info.width == 40
+    assert info.height == 20
+    assert info.rotation == 6
+
+
+def test_get_info_applies_tiff_rotation_by_default():
+    info = imagesize.get_info(ROTATED_TIFF, dpi=False, colors=False)
+    assert info.width == 20
+    assert info.height == 40
+    assert info.rotation == 6
+
+
+def test_get_info_can_disable_tiff_rotation():
+    info = imagesize.get_info(ROTATED_TIFF, dpi=False, colors=False, exif_rotation=False)
+    assert info.width == 40
+    assert info.height == 20
+    assert info.rotation == 6

@@ -17,7 +17,7 @@ This module analyzes JPEG/JPEG 2000/PNG/GIF/TIFF/SVG/Netpbm/WebP image headers a
    print(xdpi, ydpi)
 
    info = imagesize.get_info("test.png")
-   print(info.width, info.height, info.xdpi, info.ydpi, info.colors)
+   print(info.width, info.height, info.rotation, info.xdpi, info.ydpi, info.colors)
 
 This module is a pure Python module. You can use file like object like file or something like ``io.BytesIO``.
 
@@ -26,17 +26,17 @@ Supported Python versions: 3.10-3.14
 API
 -----
 
-* ``imagesize.get(filepath: FileInput) -> tuple[int, int]``
+* ``imagesize.get(filepath: FileInput, *, exif_rotation: bool = True) -> tuple[int, int]``
 
-  Returns image size as ``(width, height)``.
+  Returns image size as ``(width, height)``. By default, orientation metadata is applied for rotated JPEG/TIFF images; pass ``exif_rotation=False`` to get the stored size as-is.
 
 * ``imagesize.getDPI(filepath: FileInput) -> tuple[int, int]``
 
   Returns image DPI as ``(xdpi, ydpi)``.
 
-* ``imagesize.get_info(filepath: FileInput, *, size: bool = True, dpi: bool = True, colors: bool = True) -> ImageInfo``
+* ``imagesize.get_info(filepath: FileInput, *, size: bool = True, dpi: bool = True, colors: bool = True, exif_rotation: bool = True) -> ImageInfo``
 
-  Returns an ``ImageInfo`` named tuple with ``width``, ``height``, ``xdpi``, ``ydpi``, and ``colors`` fields.
+  Returns an ``ImageInfo`` named tuple with ``width``, ``height``, ``rotation``, ``xdpi``, ``ydpi``, and ``colors`` fields. ``rotation`` contains orientation metadata (e.g. EXIF Orientation tag, or ``-1`` when unavailable).
 
 Benchmark
 ------------

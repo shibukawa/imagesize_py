@@ -1,13 +1,8 @@
-import unittest
 import os
+import unittest
+from pathlib import Path
+
 import imagesize
-
-try:
-    from pathlib import Path
-except ImportError:
-    # Python 2
-    Path = None
-
 
 imagedir = os.path.join(os.path.dirname(__file__), "images")
 imagedir_bytes = imagedir.encode("utf-8")
@@ -84,43 +79,36 @@ class GetDPITest(unittest.TestCase):
         self.assertEqual(xdpi, -1)
         self.assertEqual(ydpi, -1)
 
-    @unittest.skipIf(Path is None, "requires pathlib support")
     def test_png_path(self):
         xdpi, ydpi = imagesize.getDPI(Path(imagedir, "test.png"))
         self.assertEqual(xdpi, 72)
         self.assertEqual(ydpi, 72)
 
-    @unittest.skipIf(Path is None, "requires pathlib support")
     def test_jpeg_path(self):
         xdpi, ydpi = imagesize.getDPI(Path(imagedir, "test.jpg"))
         self.assertEqual(xdpi, 72)
         self.assertEqual(ydpi, 72)
 
-    @unittest.skipIf(Path is None, "requires pathlib support")
     def test_jpeg2000_path(self):
         xdpi, ydpi = imagesize.getDPI(Path(imagedir, "test.jp2"))
         self.assertEqual(xdpi, -1)
         self.assertEqual(ydpi, -1)
 
-    @unittest.skipIf(Path is None, "requires pathlib support")
     def test_gif_path(self):
         xdpi, ydpi = imagesize.getDPI(Path(imagedir, "test.gif"))
         self.assertEqual(xdpi, -1)
         self.assertEqual(ydpi, -1)
 
-    @unittest.skipIf(Path is None, "requires pathlib support")
     def test_bigendian_tiff_path(self):
         xdpi, ydpi = imagesize.getDPI(Path(imagedir, "test.tiff"))
         self.assertEqual(xdpi, -1)
         self.assertEqual(ydpi, -1)
 
-    @unittest.skipIf(Path is None, "requires pathlib support")
     def test_svg_path(self):
         xdpi, ydpi = imagesize.getDPI(Path(imagedir, "test.svg"))
         self.assertEqual(xdpi, -1)
         self.assertEqual(ydpi, -1)
 
-    @unittest.skipIf(Path is None, "requires pathlib support")
     def test_littleendian_tiff_path(self):
         xdpi, ydpi = imagesize.getDPI(Path(imagedir, "multipage_tiff_example.tif"))
         self.assertEqual(xdpi, -1)

@@ -9,12 +9,7 @@ import os
 import sys
 
 from io import BytesIO
-try:
-    # For Python 3.0 and later
-    from urllib.request import urlopen
-except ImportError:
-    # Fall back to Python 2's urllib2
-    from urllib2 import urlopen
+from urllib.request import urlopen
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 import imagesize

@@ -41,6 +41,7 @@ FileInput = Union[PathInput, BinaryIO]
 class ImageInfo(NamedTuple):
     width: int = -1
     height: int = -1
+    rotation: int = -1
     xdpi: int = -1
     ydpi: int = -1
     colors: int = -1
@@ -275,6 +276,149 @@ def _get_size(fhandle):
     return width, height
 
 
+def _read_jpeg_exif_rotation(fhandle):
+    fhandle.seek(0)
+    head = fhandle.read(2)
+    if not head.startswith(b'\377\330'):
+        return -1
+
+    while True:
+        marker_start = fhandle.read(1)
+        if not marker_start:
+            break
+        while marker_start == b'\xff':
+            marker_code = fhandle.read(1)
+            if marker_code != b'\xff':
+                break
+        else:
+            continue
+
+        if not marker_code or marker_code in (b'\xd9', b'\xda'):
+            break
+
+        try:
+            segment_size = struct.unpack('>H', fhandle.read(2))[0]
+        except struct.error:
+            break
+        if segment_size < 2:
+            break
+
+        payload = fhandle.read(segment_size - 2)
+        if marker_code != b'\xe1' or not payload.startswith(b'Exif\x00\x00'):
+            continue
+
+        exif_data = payload[6:]
+        if len(exif_data) < 8:
+            return -1
+        endian_token = exif_data[:2]
+        if endian_token == b'II':
+            endian = '<'
+        elif endian_token == b'MM':
+            endian = '>'
+        else:
+            return -1
+
+        try:
+            first_ifd_offset = struct.unpack(endian + 'L', exif_data[4:8])[0]
+        except struct.error:
+            return -1
+        if first_ifd_offset + 2 > len(exif_data):
+            return -1
+
+        try:
+            ifd_count = struct.unpack(endian + 'H', exif_data[first_ifd_offset:first_ifd_offset + 2])[0]
+        except struct.error:
+            return -1
+        cursor = first_ifd_offset + 2
+
+        for _ in range(ifd_count):
+            if cursor + 12 > len(exif_data):
+                return -1
+            try:
+                tag, datatype, count, value = struct.unpack(endian + 'HHLL', exif_data[cursor:cursor + 12])
+            except struct.error:
+                return -1
+            if tag == 0x0112 and datatype == 3 and count == 1:
+                return int(value / 65536) if endian == '>' else value & 0xFFFF
+            cursor += 12
+        return -1
+
+    return -1
+
+
+def _read_tiff_rotation(fhandle):
+    fhandle.seek(0)
+    head = fhandle.read(16)
+    if len(head) < 8:
+        return -1
+
+    if head.startswith(b"MM\x00*"):
+        endian = '>'
+        is_bigtiff = False
+    elif head.startswith(b"II*\x00"):
+        endian = '<'
+        is_bigtiff = False
+    elif head.startswith(b"II+\x00"):
+        endian = '<'
+        is_bigtiff = True
+    else:
+        return -1
+
+    try:
+        if is_bigtiff:
+            if len(head) < 16:
+                return -1
+            bytesize = struct.unpack(endian + 'H', head[4:6])[0]
+            if bytesize != 8:
+                return -1
+            ifd_offset = struct.unpack(endian + 'Q', head[8:16])[0]
+            fhandle.seek(ifd_offset)
+            entry_count = struct.unpack(endian + 'Q', fhandle.read(8))[0]
+            for _ in range(entry_count):
+                entry = fhandle.read(20)
+                if len(entry) < 20:
+                    return -1
+                tag, datatype = struct.unpack(endian + 'HH', entry[:4])
+                count = struct.unpack(endian + 'Q', entry[4:12])[0]
+                value_field = entry[12:20]
+                if tag == 274 and count == 1:
+                    if datatype == 3:
+                        return struct.unpack(endian + 'H', value_field[:2])[0]
+                    if datatype == 4:
+                        return struct.unpack(endian + 'L', value_field[:4])[0]
+            return -1
+
+        ifd_offset = struct.unpack(endian + 'L', head[4:8])[0]
+        fhandle.seek(ifd_offset)
+        entry_count = struct.unpack(endian + 'H', fhandle.read(2))[0]
+        for _ in range(entry_count):
+            entry = fhandle.read(12)
+            if len(entry) < 12:
+                return -1
+            tag, datatype, count = struct.unpack(endian + 'HHL', entry[:8])
+            value_field = entry[8:12]
+            if tag == 274 and count == 1:
+                if datatype == 3:
+                    return struct.unpack(endian + 'H', value_field[:2])[0]
+                if datatype == 4:
+                    return struct.unpack(endian + 'L', value_field)[0]
+    except struct.error:
+        return -1
+
+    return -1
+
+
+def _get_rotation(fhandle):
+    rotation = _read_jpeg_exif_rotation(fhandle)
+    if rotation != -1:
+        return rotation
+    return _read_tiff_rotation(fhandle)
+
+
+def _is_rotation_swapped(rotation):
+    return rotation in {5, 6, 7, 8}
+
+
 def _get_dpi(fhandle):
     xDPI = -1
     yDPI = -1
@@ -398,30 +542,34 @@ def _get_colors(fhandle):
     return colors
 
 
-def get_info(filepath: FileInput, *, size: bool = True, dpi: bool = True, colors: bool = True) -> ImageInfo:
+def get_info(filepath: FileInput, *, size: bool = True, dpi: bool = True, colors: bool = True,
+             exif_rotation: bool = True) -> ImageInfo:
     fhandle, should_close = _open_file(filepath)
     try:
-        width = height = xdpi = ydpi = color_count = -1
+        width = height = rotation = xdpi = ydpi = color_count = -1
         if size:
             width, height = _get_size(fhandle)
+            rotation = _get_rotation(fhandle)
+            if exif_rotation and _is_rotation_swapped(rotation):
+                width, height = height, width
         if dpi:
             xdpi, ydpi = _get_dpi(fhandle)
         if colors:
             color_count = _get_colors(fhandle)
-        return ImageInfo(width=width, height=height, xdpi=xdpi, ydpi=ydpi, colors=color_count)
+        return ImageInfo(width=width, height=height, rotation=rotation, xdpi=xdpi, ydpi=ydpi, colors=color_count)
     finally:
         if should_close:
             fhandle.close()
 
 
-def get(filepath: FileInput) -> Tuple[int, int]:
+def get(filepath: FileInput, *, exif_rotation: bool = True) -> Tuple[int, int]:
     """
-    Return (width, height) for a given img file content
-    no requirements
+    Return (width, height) for a given img file content.
+    Set exif_rotation=False to return stored dimensions as-is.
     :type filepath: Union[bytes, str, pathlib.Path]
     :rtype Tuple[int, int]
     """
-    info = get_info(filepath, size=True, dpi=False, colors=False)
+    info = get_info(filepath, size=True, dpi=False, colors=False, exif_rotation=exif_rotation)
     return info.width, info.height
 
 
