@@ -2,6 +2,7 @@ import io
 import os
 import re
 import struct
+from decimal import Decimal
 from typing import BinaryIO, NamedTuple, Tuple, Union
 
 from xml.etree import ElementTree
@@ -82,18 +83,19 @@ def _convertToPx(value):
         raise ValueError("unknown length value: %s" % value)
 
     length, unit = matched.groups()
+    length = Decimal(length)
     if unit == "":
         return float(length)
     elif unit == "cm":
-        return float(length) * 96 / 2.54
+        return float(length * Decimal("96") / Decimal("2.54"))
     elif unit == "mm":
-        return float(length) * 96 / 2.54 / 10
+        return float(length * Decimal("96") / Decimal("25.4"))
     elif unit == "in":
-        return float(length) * 96
+        return float(length * Decimal("96"))
     elif unit == "pc":
-        return float(length) * 96 / 6
+        return float(length * Decimal("96") / Decimal("6"))
     elif unit == "pt":
-        return float(length) * 96 / 6
+        return float(length * Decimal("96") / Decimal("6"))
     elif unit == "px":
         return float(length)
 
