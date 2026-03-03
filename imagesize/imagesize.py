@@ -407,19 +407,26 @@ def _get_colors(fhandle):
 
 
 def get_info(filepath: FileInput, *, size: bool = True, dpi: bool = True, colors: bool = True) -> ImageInfo:
-    fhandle, should_close = _open_file(filepath)
+    width = height = xdpi = ydpi = color_count = -1
     try:
-        width = height = xdpi = ydpi = color_count = -1
+        fhandle, should_close = _open_file(filepath)
+    except Exception:
+        return ImageInfo(width=width, height=height, xdpi=xdpi, ydpi=ydpi, colors=color_count)
+
+    try:
         if size:
             width, height = _get_size(fhandle)
         if dpi:
             xdpi, ydpi = _get_dpi(fhandle)
         if colors:
             color_count = _get_colors(fhandle)
-        return ImageInfo(width=width, height=height, xdpi=xdpi, ydpi=ydpi, colors=color_count)
+    except Exception:
+        pass
     finally:
         if should_close:
             fhandle.close()
+
+    return ImageInfo(width=width, height=height, xdpi=xdpi, ydpi=ydpi, colors=color_count)
 
 
 def get(filepath: FileInput) -> Tuple[int, int]:

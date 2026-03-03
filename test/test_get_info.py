@@ -28,3 +28,12 @@ def test_legacy_aliases():
     dpi = imagesize.getDPI(os.path.join(imagedir, "test.jpg"))
     assert size == (802, 670)
     assert dpi == (72, 72)
+
+
+def test_get_info_invalid_input():
+    info = imagesize.get_info(os.path.join(imagedir, "missing-file.png"))
+    assert info.width == -1
+    assert info.height == -1
+    assert info.xdpi == -1
+    assert info.ydpi == -1
+    assert info.colors == -1

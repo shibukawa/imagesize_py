@@ -51,3 +51,19 @@ def test_get_wrapped_filelike():
         file_like = _WrappedFileLike(fhandle.read())
 
     assert imagesize.get(file_like) == (802, 670)
+
+
+def test_invalid_filelike_returns_minus_one():
+    """Return (-1, -1) instead of raising on invalid image stream."""
+
+    invalid = BytesIO(b"not an image")
+
+    assert imagesize.get(invalid) == (-1, -1)
+
+
+def test_invalid_filelike_dpi_returns_minus_one():
+    """Return (-1, -1) dpi instead of raising on invalid image stream."""
+
+    invalid = BytesIO(b"not an image")
+
+    assert imagesize.getDPI(invalid) == (-1, -1)
