@@ -18,6 +18,8 @@ This module analyzes JPEG/JPEG 2000/PNG/GIF/TIFF/SVG/Netpbm/WebP image headers a
 
 This module is a pure Python module. You can use file like object like file or something like ``io.BytesIO``.
 
+Supported Python versions: 3.10-3.14
+
 API
 -----
 
