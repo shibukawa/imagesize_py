@@ -5,7 +5,7 @@ from imagesize import __version__
 
 setup(name='imagesize',
       version=__version__,
-      description='Getting image size from png/jpeg/jpeg2000/gif file',
+      description='Get image size from headers (BMP/PNG/JPEG/JPEG2000/GIF/TIFF/SVG/Netpbm/WebP/AVIF/HEIC/HEIF)',
       long_description='''
 It parses image files' header and return image size.
 
@@ -18,6 +18,8 @@ It parses image files' header and return image size.
 * SVG
 * Netpbm
 * WebP
+* AVIF
+* HEIC/HEIF
 
 This is a pure Python library.
 ''',
