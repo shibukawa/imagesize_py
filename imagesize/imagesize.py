@@ -1,9 +1,8 @@
-import io
 import os
 import re
 import struct
 from decimal import Decimal
-from typing import BinaryIO, NamedTuple, Tuple, Union
+from typing import BinaryIO, NamedTuple, Protocol, Tuple, Union, runtime_checkable
 
 from xml.etree import ElementTree
 
@@ -35,8 +34,17 @@ _TIFF_TYPE_SIZES = {
 }
 
 
+@runtime_checkable
+class ReadSeekBinary(Protocol):
+    def read(self, size: int = -1) -> bytes:
+        ...
+
+    def seek(self, offset: int, whence: int = 0) -> int:
+        ...
+
+
 PathInput = Union[str, bytes, os.PathLike]
-FileInput = Union[PathInput, BinaryIO]
+FileInput = Union[PathInput, BinaryIO, ReadSeekBinary]
 
 
 class ImageInfo(NamedTuple):
@@ -47,8 +55,8 @@ class ImageInfo(NamedTuple):
     colors: int = -1
 
 
-def _open_file(filepath):
-    if isinstance(filepath, (io.BytesIO, io.BufferedReader)):
+def _open_file(filepath: FileInput):
+    if isinstance(filepath, ReadSeekBinary):
         return filepath, False
     return open(filepath, 'rb'), True
 
@@ -423,7 +431,10 @@ def get(filepath: FileInput) -> Tuple[int, int]:
     :type filepath: Union[bytes, str, pathlib.Path]
     :rtype Tuple[int, int]
     """
-    info = get_info(filepath, size=True, dpi=False, colors=False)
+    try:
+        info = get_info(filepath, size=True, dpi=False, colors=False)
+    except Exception:
+        return -1, -1
     return info.width, info.height
 
 
@@ -434,5 +445,8 @@ def getDPI(filepath: FileInput) -> Tuple[int, int]:
     :type filepath: Union[bytes, str, pathlib.Path]
     :rtype Tuple[int, int]
     """
-    info = get_info(filepath, size=False, dpi=True, colors=False)
+    try:
+        info = get_info(filepath, size=False, dpi=True, colors=False)
+    except Exception:
+        return -1, -1
     return info.xdpi, info.ydpi
