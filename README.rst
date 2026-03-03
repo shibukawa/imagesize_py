@@ -4,6 +4,18 @@ imagesize
 .. image:: https://github.com/shibukawa/imagesize_py/actions/workflows/ci.yml/badge.svg
     :target: https://github.com/shibukawa/imagesize_py/actions/workflows/ci.yml
 
+.. image:: https://img.shields.io/pypi/v/imagesize.svg
+    :target: https://pypi.org/project/imagesize/
+    :alt: PyPI version
+
+.. image:: https://img.shields.io/pypi/pyversions/imagesize.svg
+    :target: https://pypi.org/project/imagesize/
+    :alt: Supported Python versions
+
+.. image:: https://img.shields.io/pypi/l/imagesize.svg
+    :target: https://github.com/shibukawa/imagesize_py/blob/main/LICENSE.rst
+    :alt: License
+
 This module analyzes JPEG/JPEG 2000/PNG/GIF/TIFF/SVG/Netpbm/WebP/AVIF image headers and returns image size, DPI, and related metadata.
 
 .. code:: python
