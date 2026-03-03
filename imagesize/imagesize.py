@@ -192,7 +192,7 @@ def _get_size(fhandle):
         fhandle.seek(8)
         ftyp_payload = fhandle.read(ftyp_size - 8)
         if any(brand in ftyp_payload for brand in _HEIF_BRANDS):
-            width, height, _ = _read_heif_metadata(fhandle)
+            width, height, _, _ = _read_heif_metadata(fhandle)
             if width != -1 and height != -1:
                 return width, height
             raise ValueError("Invalid HEIF file")
@@ -394,9 +394,11 @@ def _read_orientation_from_exif_payload(exif_data):
 
 
 def _read_heif_exif_rotation(fhandle):
-    _, _, property_rotation = _read_heif_metadata(fhandle)
+    _, _, property_rotation, exif_rotation = _read_heif_metadata(fhandle)
     if property_rotation != -1:
         return property_rotation
+    if exif_rotation != -1:
+        return exif_rotation
 
     fhandle.seek(0)
     data = fhandle.read()
@@ -436,7 +438,7 @@ def _read_heif_metadata(fhandle):
             meta_box = (offset, size, header_size)
             break
     if meta_box is None:
-        return -1, -1, -1
+        return -1, -1, -1, -1
 
     meta_offset, meta_size, meta_header = meta_box
     meta_start = meta_offset + meta_header + 4
@@ -445,6 +447,8 @@ def _read_heif_metadata(fhandle):
     primary_item_id = None
     properties = []
     associations = {}
+    item_types = {}
+    item_extents = {}
 
     for offset, size, box_type, header_size in _iter_iso_boxes(data, meta_start, meta_end):
         payload_start = offset + header_size
@@ -455,6 +459,109 @@ def _read_heif_metadata(fhandle):
                 primary_item_id = struct.unpack('>H', data[payload_start + 4:payload_start + 6])[0]
             elif version > 0 and payload_start + 8 <= payload_end:
                 primary_item_id = struct.unpack('>L', data[payload_start + 4:payload_start + 8])[0]
+        elif box_type == b'iinf' and payload_start + 6 <= payload_end:
+            version = data[payload_start]
+            if version == 0:
+                entry_count = struct.unpack('>H', data[payload_start + 4:payload_start + 6])[0]
+                cursor = payload_start + 6
+            else:
+                if payload_start + 8 > payload_end:
+                    continue
+                entry_count = struct.unpack('>L', data[payload_start + 4:payload_start + 8])[0]
+                cursor = payload_start + 8
+
+            for _ in range(entry_count):
+                if cursor + 8 > payload_end:
+                    break
+                entry_size = struct.unpack('>L', data[cursor:cursor + 4])[0]
+                entry_type = data[cursor + 4:cursor + 8]
+                entry_end = cursor + entry_size
+                if entry_size < 8 or entry_end > payload_end:
+                    break
+                if entry_type == b'infe' and cursor + 13 <= payload_end:
+                    infe_payload = cursor + 8
+                    infe_version = data[infe_payload]
+                    if infe_version == 2 and infe_payload + 12 <= entry_end:
+                        item_id = struct.unpack('>H', data[infe_payload + 4:infe_payload + 6])[0]
+                        item_type = data[infe_payload + 8:infe_payload + 12]
+                        item_types[item_id] = item_type
+                    elif infe_version >= 3 and infe_payload + 16 <= entry_end:
+                        item_id = struct.unpack('>L', data[infe_payload + 4:infe_payload + 8])[0]
+                        item_type = data[infe_payload + 12:infe_payload + 16]
+                        item_types[item_id] = item_type
+                cursor = entry_end
+        elif box_type == b'iloc' and payload_start + 8 <= payload_end:
+            version = data[payload_start]
+            cursor = payload_start + 4
+
+            if cursor + 2 > payload_end:
+                continue
+            offset_size = data[cursor] >> 4
+            length_size = data[cursor] & 0x0F
+            cursor += 1
+
+            base_offset_size = data[cursor] >> 4
+            index_size = (data[cursor] & 0x0F) if version in (1, 2) else 0
+            cursor += 1
+
+            if version < 2:
+                if cursor + 2 > payload_end:
+                    continue
+                item_count = struct.unpack('>H', data[cursor:cursor + 2])[0]
+                cursor += 2
+            else:
+                if cursor + 4 > payload_end:
+                    continue
+                item_count = struct.unpack('>L', data[cursor:cursor + 4])[0]
+                cursor += 4
+
+            for _ in range(item_count):
+                if version < 2:
+                    if cursor + 2 > payload_end:
+                        break
+                    item_id = struct.unpack('>H', data[cursor:cursor + 2])[0]
+                    cursor += 2
+                else:
+                    if cursor + 4 > payload_end:
+                        break
+                    item_id = struct.unpack('>L', data[cursor:cursor + 4])[0]
+                    cursor += 4
+
+                if version in (1, 2):
+                    if cursor + 2 > payload_end:
+                        break
+                    cursor += 2
+
+                if cursor + 2 > payload_end:
+                    break
+                cursor += 2
+
+                if cursor + base_offset_size > payload_end:
+                    break
+                base_offset = int.from_bytes(data[cursor:cursor + base_offset_size], 'big') if base_offset_size else 0
+                cursor += base_offset_size
+
+                if cursor + 2 > payload_end:
+                    break
+                extent_count = struct.unpack('>H', data[cursor:cursor + 2])[0]
+                cursor += 2
+
+                extents = []
+                for _ in range(extent_count):
+                    if version in (1, 2) and index_size:
+                        if cursor + index_size > payload_end:
+                            break
+                        cursor += index_size
+                    if cursor + offset_size + length_size > payload_end:
+                        break
+                    extent_offset = int.from_bytes(data[cursor:cursor + offset_size], 'big') if offset_size else 0
+                    cursor += offset_size
+                    extent_length = int.from_bytes(data[cursor:cursor + length_size], 'big') if length_size else 0
+                    cursor += length_size
+                    extents.append((base_offset + extent_offset, extent_length))
+
+                if extents:
+                    item_extents[item_id] = extents
         elif box_type == b'iprp':
             for p_offset, p_size, p_type, p_header in _iter_iso_boxes(data, payload_start, payload_end):
                 p_payload_start = p_offset + p_header
@@ -493,10 +600,10 @@ def _read_heif_metadata(fhandle):
                         associations[item_id] = item_props
 
     if not properties:
-        return -1, -1, -1
+        return -1, -1, -1, -1
 
     target_indexes = associations.get(primary_item_id, list(range(1, len(properties) + 1)))
-    width = height = rotation = -1
+    width = height = rotation = exif_rotation = -1
     for index in target_indexes:
         if not (1 <= index <= len(properties)):
             continue
@@ -507,7 +614,26 @@ def _read_heif_metadata(fhandle):
         elif p_type == b'irot' and p_payload_start + 5 <= p_offset + p_size:
             rotation = _HEIF_IROT_TO_EXIF.get(data[p_payload_start + 4] & 0x03, -1)
 
-    return width, height, rotation
+    for item_id, item_type in item_types.items():
+        if item_type != b'Exif':
+            continue
+        for extent_offset, extent_length in item_extents.get(item_id, []):
+            if extent_length < 8:
+                continue
+            extent_end = extent_offset + extent_length
+            if extent_offset < 0 or extent_end > len(data):
+                continue
+            exif_item = data[extent_offset:extent_end]
+            tiff_offset = 4 + struct.unpack('>L', exif_item[:4])[0]
+            if tiff_offset + 8 > len(exif_item):
+                continue
+            exif_rotation = _read_orientation_from_exif_payload(exif_item[tiff_offset:])
+            if exif_rotation != -1:
+                break
+        if exif_rotation != -1:
+            break
+
+    return width, height, rotation, exif_rotation
 
 
 def _read_tiff_rotation(fhandle):
