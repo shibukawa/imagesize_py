@@ -1,8 +1,7 @@
-import io
 import os
 import re
 import struct
-from typing import BinaryIO, NamedTuple, Tuple, Union
+from typing import BinaryIO, NamedTuple, Protocol, Tuple, Union, runtime_checkable
 
 from xml.etree import ElementTree
 
@@ -34,8 +33,17 @@ _TIFF_TYPE_SIZES = {
 }
 
 
+@runtime_checkable
+class ReadSeekBinary(Protocol):
+    def read(self, size: int = -1) -> bytes:
+        ...
+
+    def seek(self, offset: int, whence: int = 0) -> int:
+        ...
+
+
 PathInput = Union[str, bytes, os.PathLike]
-FileInput = Union[PathInput, BinaryIO]
+FileInput = Union[PathInput, BinaryIO, ReadSeekBinary]
 
 
 class ImageInfo(NamedTuple):
@@ -46,8 +54,8 @@ class ImageInfo(NamedTuple):
     colors: int = -1
 
 
-def _open_file(filepath):
-    if isinstance(filepath, (io.BytesIO, io.BufferedReader)):
+def _open_file(filepath: FileInput):
+    if isinstance(filepath, ReadSeekBinary):
         return filepath, False
     return open(filepath, 'rb'), True
 
