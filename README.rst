@@ -17,7 +17,7 @@ This module analyzes JPEG/JPEG 2000/PNG/GIF/TIFF/SVG/Netpbm/WebP/AVIF image head
    print(xdpi, ydpi)
 
    info = imagesize.get_info("test.png")
-   print(info.width, info.height, info.xdpi, info.ydpi, info.colors)
+   print(info.width, info.height, info.xdpi, info.ydpi, info.colors, info.channels)
 
 This module is a pure Python module. You can use file like object like file or something like ``io.BytesIO``.
 
@@ -34,9 +34,9 @@ API
 
   Returns image DPI as ``(xdpi, ydpi)``.
 
-* ``imagesize.get_info(filepath: FileInput, *, size: bool = True, dpi: bool = True, colors: bool = True) -> ImageInfo``
+* ``imagesize.get_info(filepath: FileInput, *, size: bool = True, dpi: bool = True, colors: bool = True, channels: bool = True) -> ImageInfo``
 
-  Returns an ``ImageInfo`` named tuple with ``width``, ``height``, ``xdpi``, ``ydpi``, and ``colors`` fields.
+  Returns an ``ImageInfo`` named tuple with ``width``, ``height``, ``xdpi``, ``ydpi``, ``colors``, and ``channels`` fields.
 
 Benchmark
 ------------

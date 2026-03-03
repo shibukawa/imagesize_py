@@ -55,6 +55,7 @@ class ImageInfo(NamedTuple):
     xdpi: int = -1
     ydpi: int = -1
     colors: int = -1
+    channels: int = -1
 
 
 def _open_file(filepath: FileInput):
@@ -485,17 +486,65 @@ def _get_colors(fhandle):
     return colors
 
 
-def get_info(filepath: FileInput, *, size: bool = True, dpi: bool = True, colors: bool = True) -> ImageInfo:
+def _get_channels(fhandle):
+    channels = -1
+
+    fhandle.seek(0)
+    head = fhandle.read(32)
+    size = len(head)
+
+    if size >= 26 and head.startswith(b'\211PNG\r\n\032\n') and head[12:16] == b'IHDR':
+        color_type = head[25]
+        channels = {
+            0: 1,
+            2: 3,
+            3: 1,
+            4: 2,
+            6: 4,
+        }.get(color_type, -1)
+    elif size >= 2 and head.startswith(b'\377\330'):
+        try:
+            fhandle.seek(0)
+            block_size = 2
+            marker = 0
+            while not 0xc0 <= marker <= 0xcf or marker in [0xc4, 0xc8, 0xcc]:
+                fhandle.seek(block_size, 1)
+                byte = fhandle.read(1)
+                while ord(byte) == 0xff:
+                    byte = fhandle.read(1)
+                marker = ord(byte)
+                block_size = struct.unpack('>H', fhandle.read(2))[0] - 2
+            fhandle.seek(5, 1)
+            channels = struct.unpack('>B', fhandle.read(1))[0]
+        except (struct.error, TypeError):
+            raise ValueError("Invalid JPEG file")
+    elif size >= 11 and head[:6] in (b'GIF87a', b'GIF89a'):
+        channels = 3
+    elif size >= 26 and head.startswith(b'BM'):
+        bit_depth = struct.unpack('<H', head[28:30])[0]
+        if bit_depth <= 8:
+            channels = 1
+        elif bit_depth == 24:
+            channels = 3
+        elif bit_depth == 32:
+            channels = 4
+
+    return channels
+
+
+def get_info(filepath: FileInput, *, size: bool = True, dpi: bool = True, colors: bool = True, channels: bool = True) -> ImageInfo:
     fhandle, should_close = _open_file(filepath)
     try:
-        width = height = xdpi = ydpi = color_count = -1
+        width = height = xdpi = ydpi = color_count = channel_count = -1
         if size:
             width, height = _get_size(fhandle)
         if dpi:
             xdpi, ydpi = _get_dpi(fhandle)
         if colors:
             color_count = _get_colors(fhandle)
-        return ImageInfo(width=width, height=height, xdpi=xdpi, ydpi=ydpi, colors=color_count)
+        if channels:
+            channel_count = _get_channels(fhandle)
+        return ImageInfo(width=width, height=height, xdpi=xdpi, ydpi=ydpi, colors=color_count, channels=channel_count)
     finally:
         if should_close:
             fhandle.close()
