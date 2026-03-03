@@ -69,6 +69,9 @@ License
 
 MIT License
 
+* test/images/test.heic: https://nokiatech.github.io/heif/examples.html
+* test/images/test.avif: https://libre-software.net/image/avif-test/
+
 Thanks
 ----------
 
