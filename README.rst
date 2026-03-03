@@ -4,7 +4,7 @@ imagesize
 .. image:: https://github.com/shibukawa/imagesize_py/actions/workflows/ci.yml/badge.svg
     :target: https://github.com/shibukawa/imagesize_py/actions/workflows/ci.yml
 
-This module analyzes JPEG/JPEG 2000/PNG/GIF/TIFF/SVG/Netpbm/WebP image headers and returns image size or DPI.
+This module analyzes JPEG/JPEG 2000/PNG/GIF/TIFF/SVG/Netpbm/WebP image headers and returns image size, DPI, and related metadata.
 
 .. code:: python
 
@@ -13,8 +13,11 @@ This module analyzes JPEG/JPEG 2000/PNG/GIF/TIFF/SVG/Netpbm/WebP image headers a
    width, height = imagesize.get("test.png")
    print(width, height)
 
-   width, height = imagesize.getDPI("test.png")
-   print(width, height)
+   xdpi, ydpi = imagesize.getDPI("test.png")
+   print(xdpi, ydpi)
+
+   info = imagesize.get_info("test.png")
+   print(info.width, info.height, info.xdpi, info.ydpi, info.colors)
 
 This module is a pure Python module. You can use file like object like file or something like ``io.BytesIO``.
 
@@ -23,13 +26,17 @@ Supported Python versions: 3.10-3.14
 API
 -----
 
-* ``imagesize.get(filepath)``
+* ``imagesize.get(filepath: FileInput) -> tuple[int, int]``
 
-  Returns image size (width, height).
+  Returns image size as ``(width, height)``.
 
-* ``imagesize.getDPI(filepath)``
+* ``imagesize.getDPI(filepath: FileInput) -> tuple[int, int]``
 
-  Returns image DPI (width, height).
+  Returns image DPI as ``(xdpi, ydpi)``.
+
+* ``imagesize.get_info(filepath: FileInput, *, size: bool = True, dpi: bool = True, colors: bool = True) -> ImageInfo``
+
+  Returns an ``ImageInfo`` named tuple with ``width``, ``height``, ``xdpi``, ``ydpi``, and ``colors`` fields.
 
 Benchmark
 ------------
