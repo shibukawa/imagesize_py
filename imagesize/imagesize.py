@@ -254,8 +254,8 @@ def _get_size(fhandle):
         data = fhandle.read(1024)
         try:
             data = data.decode('utf-8')
-            width = re.search(r'[^-]width="(.*?)"', data).group(1)
-            height = re.search(r'[^-]height="(.*?)"', data).group(1)
+            width = re.search(r'''[^-]width=(["'])(.*?)\1''', data).group(2)
+            height = re.search(r'''[^-]height=(["'])(.*?)\1''', data).group(2)
         except Exception:
             raise ValueError("Invalid SVG file")
         width = _convertToPx(width)
