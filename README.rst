@@ -74,7 +74,7 @@ API
 
 * ``imagesize.get(filepath: FileInput, *, exif_rotation: bool = True) -> tuple[int, int]``
 
-  Returns image size as ``(width, height)``. By default, orientation metadata is applied for rotated JPEG/TIFF images; pass ``exif_rotation=False`` to get the stored size as-is.
+  Returns image size as ``(width, height)``. By default, orientation metadata is applied for rotated JPEG/TIFF/AVIF/HEIF images; pass ``exif_rotation=False`` to get the stored size as-is.
   On parsing errors it returns ``(-1, -1)``.
 
 * ``imagesize.getDPI(filepath: FileInput) -> tuple[int, int]``
@@ -86,22 +86,26 @@ API
 
   Returns an ``ImageInfo`` named tuple with ``width``, ``height``, ``rotation``, ``xdpi``, ``ydpi``, ``colors`` and ``channels`` fields. ``rotation`` contains orientation metadata (e.g. EXIF Orientation tag, or ``-1`` when unavailable).
 
+HTTP and HTTPS URLs are accepted as input. The library uses HTTP byte-range
+requests automatically so that pixel data does not need to be downloaded. If a
+server does not support range requests, it transparently falls back to one full
+download for compatibility. The first request is limited to 8 KiB; later random
+access expands cached regions in 64 KiB blocks only when more metadata is needed.
+
 Benchmark
 ------------
 
-It only parses headers, and ignores pixel data. So it is much faster than Pillow.
+Only headers and the metadata needed for the requested result are read. Pixel
+payloads are skipped with ``seek()`` locally and HTTP Range requests remotely.
+Run the included benchmark with:
 
-.. list-table::
-   :header-rows: 1
+.. code:: bash
 
-   - * module
-     * result
-   - * imagesize (pure Python)
-     * 1.077 seconds per 100 000 times
-   - * Pillow
-     * 10.569 seconds per 100 000 times
+   python bench.py --number 10000
 
-I tested on MacBookPro (2014/Core i7) with 125kB PNG files.
+The report includes elapsed time and the number of bytes read for PNG, JPEG,
+TIFF, GIF, JPEG2000, AVIF, and HEIF. It also simulates an 8 MiB remote AVIF and
+reports the number of Range requests and transferred bytes.
 
 Development
 ---------------
