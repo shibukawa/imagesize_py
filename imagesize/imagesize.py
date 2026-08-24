@@ -310,6 +310,7 @@ def _get_size(fhandle):
             raise ValueError("Unsupported WebP file")
     elif head.startswith(b'BM'):
         width, height = struct.unpack("<ll", head[18:26])
+        height = abs(height)
 
     return width, height
 

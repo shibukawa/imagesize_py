@@ -40,7 +40,7 @@ class GetTest(unittest.TestCase):
     def test_load_bmp(self):
         width, height = imagesize.get(bmpfile)
         self.assertEqual(width, 100)
-        self.assertEqual(abs(height), 300)
+        self.assertEqual(height, 300)
 
     def test_bigendian_tiff(self):
         width, height = imagesize.get(os.path.join(imagedir, "test.tiff"))
@@ -117,7 +117,7 @@ class GetTest(unittest.TestCase):
     def test_load_bmp_bytes(self):
         width, height = imagesize.get(bmpfile_bytes)
         self.assertEqual(width, 100)
-        self.assertEqual(abs(height), 300)
+        self.assertEqual(height, 300)
 
     def test_bigendian_tiff_bytes(self):
         width, height = imagesize.get(os.path.join(imagedir_bytes, b"test.tiff"))
@@ -187,7 +187,7 @@ class GetTest(unittest.TestCase):
     def test_load_bmp_path(self):
         width, height = imagesize.get(Path(bmpfile))
         self.assertEqual(width, 100)
-        self.assertEqual(abs(height), 300)
+        self.assertEqual(height, 300)
 
     def test_bigendian_tiff_path(self):
         width, height = imagesize.get(Path(imagedir, "test.tiff"))
