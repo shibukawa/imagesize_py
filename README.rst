@@ -158,3 +158,8 @@ Thank you for feedback:
 * gremur (https://github.com/gremur)
 * fuyb1992 (https://github.com/fuyb1992)
 * flagman (https://github.com/flagman)
+* icemac (https://github.com/icemac)
+* ojuuji (https://github.com/ojuuji)
+* stephenfin (https://github.com/stephenfin)
+* gaoflow (https://github.com/gaoflow)
+* jdillard (https://github.com/jdillard)
