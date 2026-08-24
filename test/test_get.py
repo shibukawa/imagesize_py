@@ -32,6 +32,16 @@ class GetTest(unittest.TestCase):
         self.assertEqual(width, 802)
         self.assertEqual(height, 670)
 
+    def test_load_jpeg2000_with_boxes_before_header(self):
+        path = os.path.join(imagedir, "issue84.jp2")
+        width, height = imagesize.get(path)
+        self.assertEqual(width, 1200)
+        self.assertEqual(height, 778)
+
+        info = imagesize.get_info(path)
+        self.assertEqual(info.width, 1200)
+        self.assertEqual(info.height, 778)
+
     def test_load_gif(self):
         width, height = imagesize.get(os.path.join(imagedir, "test.gif"))
         self.assertEqual(width, 802)

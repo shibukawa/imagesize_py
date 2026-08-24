@@ -135,6 +135,67 @@ def _convertToPx(value):
     raise ValueError("unknown unit type: %s" % unit)
 
 
+def _find_jp2_box(fhandle, target_type, container_size=None):
+    remaining = container_size
+
+    while remaining is None or remaining > 0:
+        if remaining is not None and remaining < 8:
+            raise ValueError("Invalid JPEG2000 box size")
+
+        box_header = fhandle.read(8)
+        if not box_header and remaining is None:
+            break
+        if len(box_header) != 8:
+            raise ValueError("Invalid JPEG2000 box header")
+
+        box_size, box_type = struct.unpack('>L4s', box_header)
+        header_size = 8
+        if box_size == 1:
+            extended_size = fhandle.read(8)
+            if len(extended_size) != 8:
+                raise ValueError("Invalid JPEG2000 extended box size")
+            box_size = struct.unpack('>Q', extended_size)[0]
+            header_size = 16
+        elif box_size == 0:
+            box_size = remaining
+
+        if box_size is not None:
+            if (box_size < header_size or
+                    (remaining is not None and box_size > remaining)):
+                raise ValueError("Invalid JPEG2000 box size")
+            payload_size = box_size - header_size
+        else:
+            payload_size = None
+
+        if box_type == target_type:
+            return payload_size
+
+        # A zero-sized box outside a bounded container extends to EOF, so no
+        # following sibling box can exist.
+        if payload_size is None:
+            break
+
+        fhandle.seek(payload_size, 1)
+        if remaining is not None:
+            remaining -= box_size
+
+    raise ValueError("JPEG2000 box not found: %r" % target_type)
+
+
+def _read_jp2_size(fhandle):
+    fhandle.seek(0)
+    jp2_header_size = _find_jp2_box(fhandle, b'jp2h')
+    image_header_size = _find_jp2_box(fhandle, b'ihdr', jp2_header_size)
+    if image_header_size is not None and image_header_size < 8:
+        raise ValueError("Invalid JPEG2000 image header box")
+
+    dimensions = fhandle.read(8)
+    if len(dimensions) != 8:
+        raise ValueError("Invalid JPEG2000 image header box")
+    height, width = struct.unpack('>LL', dimensions)
+    return width, height
+
+
 def _get_size(fhandle):
     height = -1
     width = -1
@@ -173,10 +234,9 @@ def _get_size(fhandle):
             raise ValueError("Invalid JPEG file")
     # handle JPEG2000s
     elif size >= 12 and head.startswith(b'\x00\x00\x00\x0cjP  \r\n\x87\n'):
-        fhandle.seek(48)
         try:
-            height, width = struct.unpack('>LL', fhandle.read(8))
-        except struct.error:
+            width, height = _read_jp2_size(fhandle)
+        except (struct.error, ValueError):
             raise ValueError("Invalid JPEG2000 file")
     # handle AVIF/HEIF
     elif size >= 16 and head[4:8] == b'ftyp':
@@ -791,36 +851,30 @@ def _get_dpi(fhandle):
             raise ValueError("Invalid JPEG file")
     # handle JPEG2000s
     elif size >= 12 and head.startswith(b'\x00\x00\x00\x0cjP  \r\n\x87\n'):
-        fhandle.seek(32)
-        # skip JP2 image header box
-        headerSize = struct.unpack('>L', fhandle.read(4))[0] - 8
-        fhandle.seek(4, 1)
-        foundResBox = False
         try:
-            while headerSize > 0:
-                boxHeader = fhandle.read(8)
-                boxType = boxHeader[4:]
-                if boxType == b'res ':  # find resolution super box
-                    foundResBox = True
-                    headerSize -= 8
-                    break
-                boxSize, = struct.unpack('>L', boxHeader[:4])
-                fhandle.seek(boxSize - 8, 1)
-                headerSize -= boxSize
-            if foundResBox:
-                while headerSize > 0:
-                    boxHeader = fhandle.read(8)
-                    boxType = boxHeader[4:]
-                    if boxType == b'resd':  # Display resolution box
-                        yDensity, xDensity, yUnit, xUnit = struct.unpack(">HHBB", fhandle.read(10))
-                        xDPI = _convertToDPI(xDensity, xUnit)
-                        yDPI = _convertToDPI(yDensity, yUnit)
-                        break
-                    boxSize, = struct.unpack('>L', boxHeader[:4])
-                    fhandle.seek(boxSize - 8, 1)
-                    headerSize -= boxSize
-        except struct.error:
-            raise ValueError("Invalid JPEG2000 file")
+            fhandle.seek(0)
+            jp2_header_size = _find_jp2_box(fhandle, b'jp2h')
+            resolution_box_size = _find_jp2_box(
+                fhandle, b'res ', jp2_header_size)
+            display_resolution_size = _find_jp2_box(
+                fhandle, b'resd', resolution_box_size)
+            if (display_resolution_size is not None and
+                    display_resolution_size < 10):
+                raise ValueError("Invalid JPEG2000 display resolution box")
+            resolution = fhandle.read(10)
+            if len(resolution) != 10:
+                raise ValueError("Invalid JPEG2000 display resolution box")
+            (y_numerator, y_denominator, x_numerator, x_denominator,
+             y_exponent, x_exponent) = struct.unpack(">HHHHbb", resolution)
+            if x_denominator == 0 or y_denominator == 0:
+                raise ValueError("Invalid JPEG2000 display resolution box")
+            x_density = x_numerator / x_denominator * (10 ** x_exponent)
+            y_density = y_numerator / y_denominator * (10 ** y_exponent)
+            xDPI = _convertToDPI(x_density, _UNIT_1M)
+            yDPI = _convertToDPI(y_density, _UNIT_1M)
+        except (struct.error, ValueError):
+            # Resolution metadata is optional in JP2 files.
+            pass
 
     return xDPI, yDPI
 
