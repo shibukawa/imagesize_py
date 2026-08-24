@@ -1116,8 +1116,8 @@ def _read_svg_size(fhandle, head=None):
             fhandle.seek(len(prefix))
             prefix += fhandle.read(1024 - len(prefix))
         data = prefix.decode('utf-8')
-        width = re.search(r'[^-]width="(.*?)"', data).group(1)
-        height = re.search(r'[^-]height="(.*?)"', data).group(1)
+        width = re.search(r'''[^-]width=(["'])(.*?)\1''', data).group(2)
+        height = re.search(r'''[^-]height=(["'])(.*?)\1''', data).group(2)
     except Exception:
         raise ValueError("Invalid SVG file")
     return _convertToPx(width), _convertToPx(height)
@@ -1221,6 +1221,7 @@ def _read_image_metadata(fhandle, *, size=True, dpi=True, colors=True,
         return _ImageMetadata(width, height, -1, -1, -1, color_count, 3 if channels else -1)
     if image_format == 'bmp':
         width, height = struct.unpack('<ll', head[18:26]) if size else (-1, -1)
+        height = abs(height) if size else -1
         channel_count = -1
         if channels and len(head) >= 30:
             depth = struct.unpack('<H', head[28:30])[0]

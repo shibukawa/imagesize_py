@@ -50,7 +50,7 @@ class GetTest(unittest.TestCase):
     def test_load_bmp(self):
         width, height = imagesize.get(bmpfile)
         self.assertEqual(width, 100)
-        self.assertEqual(abs(height), 300)
+        self.assertEqual(height, 300)
 
     def test_bigendian_tiff(self):
         width, height = imagesize.get(os.path.join(imagedir, "test.tiff"))
@@ -82,6 +82,41 @@ class GetTest(unittest.TestCase):
         width, height = imagesize.get(BytesIO(svg))
         self.assertEqual(width, 96)
         self.assertEqual(height, 48)
+
+    def test_load_svg_single_quoted_size(self):
+        from io import BytesIO
+
+        svg = b"<svg xmlns=\"http://www.w3.org/2000/svg\" width='90' height='60'></svg>"
+        width, height = imagesize.get(BytesIO(svg))
+        self.assertEqual(width, 90)
+        self.assertEqual(height, 60)
+
+    def test_load_svg_single_quoted_pt(self):
+        from io import BytesIO
+
+        svg = b"<svg xmlns=\"http://www.w3.org/2000/svg\" width='72pt' height='36pt'></svg>"
+        width, height = imagesize.get(BytesIO(svg))
+        self.assertEqual(width, 96)
+        self.assertEqual(height, 48)
+
+    def test_load_svg_ignores_stroke_width(self):
+        from io import BytesIO
+
+        svg = (
+            b"<svg xmlns=\"http://www.w3.org/2000/svg\" "
+            b"width='90' height='60' stroke-width=\"2\"></svg>"
+        )
+        width, height = imagesize.get(BytesIO(svg))
+        self.assertEqual(width, 90)
+        self.assertEqual(height, 60)
+
+    def test_load_svg_mismatched_quotes(self):
+        from io import BytesIO
+
+        svg = b"<svg xmlns='http://www.w3.org/2000/svg' width=\"90' height='60'></svg>"
+        width, height = imagesize.get(BytesIO(svg))
+        self.assertEqual(width, -1)
+        self.assertEqual(height, -1)
 
     def test_load_png_filelike(self):
         """ test_load_png_filelike
@@ -127,7 +162,7 @@ class GetTest(unittest.TestCase):
     def test_load_bmp_bytes(self):
         width, height = imagesize.get(bmpfile_bytes)
         self.assertEqual(width, 100)
-        self.assertEqual(abs(height), 300)
+        self.assertEqual(height, 300)
 
     def test_bigendian_tiff_bytes(self):
         width, height = imagesize.get(os.path.join(imagedir_bytes, b"test.tiff"))
@@ -197,7 +232,7 @@ class GetTest(unittest.TestCase):
     def test_load_bmp_path(self):
         width, height = imagesize.get(Path(bmpfile))
         self.assertEqual(width, 100)
-        self.assertEqual(abs(height), 300)
+        self.assertEqual(height, 300)
 
     def test_bigendian_tiff_path(self):
         width, height = imagesize.get(Path(imagedir, "test.tiff"))
