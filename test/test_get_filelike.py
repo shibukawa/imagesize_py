@@ -4,6 +4,7 @@ Tests imagesize.get for file-like objects.
 
 import os
 import sys
+import unittest
 from io import BytesIO
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
@@ -67,3 +68,11 @@ def test_invalid_filelike_dpi_returns_minus_one():
     invalid = BytesIO(b"not an image")
 
     assert imagesize.getDPI(invalid) == (-1, -1)
+
+
+class GetFileLikeTest(unittest.TestCase):
+    test_get_filelike = staticmethod(test_get_filelike)
+    test_get_file_object = staticmethod(test_get_file_object)
+    test_get_wrapped_filelike = staticmethod(test_get_wrapped_filelike)
+    test_invalid_filelike_returns_minus_one = staticmethod(test_invalid_filelike_returns_minus_one)
+    test_invalid_filelike_dpi_returns_minus_one = staticmethod(test_invalid_filelike_dpi_returns_minus_one)
