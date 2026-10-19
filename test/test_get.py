@@ -47,6 +47,20 @@ class GetTest(unittest.TestCase):
         self.assertEqual(width, 802)
         self.assertEqual(height, 670)
 
+    def test_load_gif_unsigned_dimensions(self):
+        from io import BytesIO
+        import struct
+
+        with open(os.path.join(imagedir, "test.gif"), "rb") as source:
+            data = bytearray(source.read())
+        # Enlarge the logical screen without changing the image or pixel data.
+        # Both dimensions are unsigned 16-bit values in the GIF descriptor.
+        data[6:10] = struct.pack("<HH", 32768, 65535)
+
+        self.assertEqual(imagesize.get(BytesIO(data)), (32768, 65535))
+        info = imagesize.get_info(BytesIO(data))
+        self.assertEqual((info.width, info.height), (32768, 65535))
+
     def test_load_bmp(self):
         width, height = imagesize.get(bmpfile)
         self.assertEqual(width, 100)

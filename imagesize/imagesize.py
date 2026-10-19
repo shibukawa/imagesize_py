@@ -1214,7 +1214,7 @@ def _read_image_metadata(fhandle, *, size=True, dpi=True, colors=True,
         xdpi, ydpi = _read_png_dpi(fhandle, head=head) if dpi else (-1, -1)
         return _ImageMetadata(width, height, -1, xdpi, ydpi, color_count, channel_count)
     if image_format == 'gif':
-        width, height = struct.unpack('<hh', head[6:10]) if size else (-1, -1)
+        width, height = struct.unpack('<HH', head[6:10]) if size else (-1, -1)
         color_count = -1
         if colors and len(head) >= 11 and head[10] & 0x80:
             color_count = 2 ** ((head[10] & 0x07) + 1)
