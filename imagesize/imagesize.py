@@ -1116,8 +1116,8 @@ def _read_svg_size(fhandle, head=None):
             fhandle.seek(len(prefix))
             prefix += fhandle.read(1024 - len(prefix))
         data = prefix.decode('utf-8')
-        width = re.search(r'''[^-]width=(["'])(.*?)\1''', data).group(2)
-        height = re.search(r'''[^-]height=(["'])(.*?)\1''', data).group(2)
+        width = re.search(r'''[^-]width[ \t\r\n]*=[ \t\r\n]*(["'])(.*?)\1''', data).group(2)
+        height = re.search(r'''[^-]height[ \t\r\n]*=[ \t\r\n]*(["'])(.*?)\1''', data).group(2)
     except Exception:
         raise ValueError("Invalid SVG file")
     return _convertToPx(width), _convertToPx(height)

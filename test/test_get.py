@@ -99,6 +99,22 @@ class GetTest(unittest.TestCase):
         self.assertEqual(width, 96)
         self.assertEqual(height, 48)
 
+    def test_load_svg_whitespace_around_equals(self):
+        from io import BytesIO
+
+        for before, after in [(" ", ""), ("", " "), (" ", " "), ("\t", "\r\n")]:
+            for quote in ("'", '"'):
+                with self.subTest(before=before, after=after, quote=quote):
+                    svg = (
+                        '<svg xmlns="http://www.w3.org/2000/svg" '
+                        f'stroke-width{before}={after}{quote}2{quote} '
+                        f'width{before}={after}{quote}90{quote} '
+                        f'height{before}={after}{quote}60{quote}></svg>'
+                    ).encode("utf-8")
+                    self.assertEqual(imagesize.get(BytesIO(svg)), (90, 60))
+                    info = imagesize.get_info(BytesIO(svg))
+                    self.assertEqual((info.width, info.height), (90, 60))
+
     def test_load_svg_ignores_stroke_width(self):
         from io import BytesIO
 
