@@ -852,7 +852,8 @@ def _read_jpeg_metadata(fhandle, *, size, dpi, rotation, channels, head=None):
         if marker == 0xe0 and dpi:
             if len(payload) >= 12 and payload.startswith(b'JFIF\x00'):
                 unit, xdensity, ydensity = struct.unpack('>BHH', payload[7:12])
-                if unit in (0, 1):
+                # unit 0 with 1:1 is the JFIF default: an aspect ratio, no resolution
+                if unit == 1 or (unit == 0 and (xdensity, ydensity) != (1, 1)):
                     xdpi, ydpi = xdensity, ydensity
                 elif unit == 2:
                     xdpi = _convertToDPI(xdensity, _UNIT_CM)
@@ -905,7 +906,8 @@ def _read_jpeg_metadata(fhandle, *, size, dpi, rotation, channels, head=None):
             payload = fhandle.read(min(payload_size, 14))
             if len(payload) >= 12 and payload.startswith(b'JFIF\x00'):
                 unit, xdensity, ydensity = struct.unpack('>BHH', payload[7:12])
-                if unit in (0, 1):
+                # unit 0 with 1:1 is the JFIF default: an aspect ratio, no resolution
+                if unit == 1 or (unit == 0 and (xdensity, ydensity) != (1, 1)):
                     xdpi, ydpi = xdensity, ydensity
                 elif unit == 2:
                     xdpi = _convertToDPI(xdensity, _UNIT_CM)

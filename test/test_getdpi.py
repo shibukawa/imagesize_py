@@ -1,4 +1,6 @@
+import io
 import os
+import struct
 import unittest
 from pathlib import Path
 
@@ -113,3 +115,14 @@ class GetDPITest(unittest.TestCase):
         xdpi, ydpi = imagesize.getDPI(Path(imagedir, "multipage_tiff_example.tif"))
         self.assertEqual(xdpi, -1)
         self.assertEqual(ydpi, -1)
+
+
+def test_jpeg_default_density_is_not_a_dpi():
+    jfif = b"JFIF\x00\x01\x01\x00" + struct.pack(">HH", 1, 1) + b"\x00\x00"
+    sof = b"\x08" + struct.pack(">HH", 77, 123) + b"\x01\x01\x11\x00"
+    jpeg = (
+        b"\xff\xd8\xff\xe0" + struct.pack(">H", len(jfif) + 2) + jfif
+        + b"\xff\xc0" + struct.pack(">H", len(sof) + 2) + sof
+    )
+    assert imagesize.getDPI(io.BytesIO(jpeg)) == (-1, -1)
+    assert imagesize.get_info(io.BytesIO(jpeg)).xdpi == -1
